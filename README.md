@@ -2,7 +2,7 @@
 
 # AE-MCP-IMT — After Effects for AI agents, built to be safe to hand over
 
-An MCP server that lets an AI agent (Claude Code, Claude Desktop, Cursor, Deep Artisan or any
+An MCP server that lets an AI agent (Claude Desktop, Cursor, ChatGPT or any
 MCP-compatible client) drive a running Adobe After Effects: inspect projects, edit comps, layers,
 effects, keyframes, text and masks, set expressions, render frames — from natural language.
 
