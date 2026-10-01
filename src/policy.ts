@@ -18,6 +18,7 @@
 // its name).
 
 import type { Operation } from "./registry.js";
+import { envFlag } from "./env-flag.js";
 
 /**
  * How a tool is presented to MCP clients that gate on behaviour hints.
@@ -33,11 +34,11 @@ export interface Denial {
 
 export function evalRunEnabled(): boolean {
   if (readOnlyMode()) return false;
-  return process.env.AE_MCP_ENABLE_EVAL === "1";
+  return envFlag("AE_MCP_ENABLE_EVAL");
 }
 
 export function readOnlyMode(): boolean {
-  return process.env.AE_MCP_READONLY === "1";
+  return envFlag("AE_MCP_READONLY");
 }
 
 /** Parsed AE_MCP_ALLOW_CATEGORIES, or null when no allowlist is configured. */

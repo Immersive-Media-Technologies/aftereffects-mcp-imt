@@ -1,4 +1,4 @@
-// Живая самопроверка: поднимает сервер по stdio, зовёт ae_version_info и
+// Live self-test: starts the server over stdio, calls ae_version_info and prints the answer.
 // печатает ответ. Отдельный файл, а не строчка в install.sh, потому что
 // именно он различает три неотличимых снаружи отказа: сервер не поднялся,
 // AppleEvents запрещены, AE не отвечает.
@@ -31,7 +31,7 @@ srv.stdout.on("data", (d) => {
         pending.delete(msg.id);
       }
     } catch {
-      /* не JSON-RPC строка — игнорируем */
+      /* not a JSON-RPC line */
     }
   }
 });
@@ -51,7 +51,7 @@ const die = (msg) => {
 };
 
 const timer = setTimeout(
-  () => die("таймаут 120с — AE не ответил (проверьте разрешение на автоматизацию)"),
+  () => die("timeout 120 s — After Effects did not answer (check the Automation permission)"),
   120_000,
 );
 

@@ -1,7 +1,6 @@
 {
   "name": "@immersive-media-technologies/aftereffects-mcp-imt",
-  "version": "0.3.5",
-  "private": true,
+  "version": "0.3.6",
   "description": "AE-MCP-IMT — MCP server for Adobe After Effects built for autonomous AI agents (macOS + Windows): 199 undo-grouped operations behind two tools, a real dry run, localized-AE-safe effect presets, live self-test installer. By Immersive Media Technologies (fork of kumoproductions/mcp-aftereffects).",
   "keywords": [
     "adobe",
@@ -28,14 +27,17 @@
     "url": "git+https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt.git"
   },
   "bin": {
-    "mcp-aftereffects": "dist/index.js"
+    "aftereffects-mcp-imt": "dist/index.js"
   },
   "files": [
     "dist",
     "jsx",
     "fixtures",
-    "LICENSE",
+    "tools/selftest.mjs",
+    "install.sh",
+    "install.ps1",
     "README.md",
+    "LICENSE",
     "NOTICE",
     "THIRD-PARTY-NOTICES.md"
   ],
@@ -65,7 +67,8 @@
     "prepare": "lefthook install",
     "prepublishOnly": "npm run build",
     "preversion": "node scripts/release-changelog.mjs --check",
-    "version": "node scripts/release-changelog.mjs && node scripts/sync-server-version.mjs && git add CHANGELOG.md server.json"
+    "version": "node scripts/release-changelog.mjs && node scripts/sync-server-version.mjs && git add CHANGELOG.md server.json",
+    "build:mcpb": "node scripts/build-mcpb.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -81,6 +84,6 @@
     "vitest": "^4.1.4"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=22.0.0"
   }
 }

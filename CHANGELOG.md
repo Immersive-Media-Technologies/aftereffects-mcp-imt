@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2026-10-01
+
+### Added
+
+- **One-click installs.** Claude Desktop extension `aftereffects-mcp-imt.mcpb` (built by
+  `npm run build:mcpb` from `mcpb/manifest.json`, attached to every release; Claude Desktop ships
+  its own Node.js; the settings dialog carries read-only mode, `eval.run` and the AE path), an
+  «Add to Cursor» install link, `claude mcp add … npx -y @immersive-media-technologies/aftereffects-mcp-imt`,
+  and the package on npm for every other client.
+- `install.sh` rewritten (English; was Russian with an internal path) and `install.ps1` for
+  Windows: check After Effects and Node, build, run `tools/selftest.mjs` against the running AE,
+  then write `mcpServers.aftereffects` into Claude Desktop's and Cursor's config files after asking
+  (backup first); `--no-config`, `--yes`. The Windows script is not run by us yet.
+- Boolean environment flags (`AE_MCP_READONLY`, `AE_MCP_ENABLE_EVAL`) accept `true` / `false` as
+  well as `1` / `0` (`src/env-flag.ts`) — what MCPB user settings produce.
+
+### Changed
+
+- `engines.node` relaxed to `>=22` (nothing in the code needs 24; Claude Desktop's bundled Node is
+  what the extension runs on); binary renamed `aftereffects-mcp-imt`; package published on npm.
+- README: Install rewritten around the client routes (Claude Desktop, Cursor, Claude Code,
+  ChatGPT through a gateway + tunnel, any MCP client).
+
 ## [0.3.5] - 2026-09-30
 
 ### Added
@@ -150,6 +173,7 @@ Initial public release of `@kumoproductions/mcp-aftereffects`.
 
 - Importing a project whose footage is missing can misattribute layer parenting.
 
+[0.3.6]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.6
 [0.3.5]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.5
 [0.3.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.0
 [0.2.0]: https://github.com/kumoproductions/mcp-aftereffects/releases/tag/v0.2.0

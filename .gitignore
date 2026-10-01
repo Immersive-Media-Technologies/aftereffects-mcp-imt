@@ -25,3 +25,7 @@ smoke-client.mjs
 
 # AE Motion skill: third-party references are fetched by skills/ae-motion/fetch-vendor.sh, not committed
 skills/ae-motion/vendor/
+
+# MCPB bundle build
+release/
+.mcpb-staging/
