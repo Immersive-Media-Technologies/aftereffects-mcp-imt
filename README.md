@@ -171,7 +171,7 @@ Each version is described on the
 [**Releases**](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases) page — what the
 server does at that version and what the release added:
 
-- [v0.3.6](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.6) · 2026-10-01 —
+- [v0.4.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.0) · 2026-10-01 —
   one-click installs: Claude Desktop extension (`.mcpb`), «Add to Cursor», npm package, `install.sh` /
   `install.ps1` that write the client configs.
 - [v0.3.5](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.5) · 2026-09-30 —
