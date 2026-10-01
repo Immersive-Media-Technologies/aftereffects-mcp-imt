@@ -165,12 +165,26 @@ The full operation reference is generated from the source: [`docs/TOOLS.md`](doc
   assume a fake executable isolates them, but on macOS the path is not executed — the live AE
   answers. Run the suite with AE closed or on CI (where it self-skips).
 
+## Release history
+
+Each version is described on the
+[**Releases**](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases) page — what the
+server does at that version and what the release added:
+
+- [v0.3.5](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.5) · 2026-09-30 —
+  the AE Motion skill (editable motion graphics built natively in AE); server and tools unchanged.
+- [v0.3.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.0) · 2026-09-30 —
+  first public release of the IMT fork: the full server (199 operations, 23 categories) plus the fork's dry run,
+  effect presets, render folders, installer with self-test and the agent policy.
+
+Every change, including the upstream history 0.1.0 – 0.2.0, is in [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Changes against upstream
 
 See [`CHANGELOG.md`](CHANGELOG.md) and [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). In short:
 the `ae_do` dry run that really is one; effect templates that exist and work on localized AE, with
 misses reported in `warnings`; render output folders; the installer with a live self-test; the agent
-permission model and the macOS notes above. Upstream fixes are merged from
+permission model and the macOS notes above; since 0.3.5 the AE Motion skill. Upstream fixes are merged from
 [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic,
 one at a time.
 
