@@ -92,6 +92,7 @@ NODE
   }
   write_config "$HOME/Library/Application Support/Claude/claude_desktop_config.json" "Claude Desktop"
   write_config "$HOME/.cursor/mcp.json" "Cursor"
+  write_config "$HOME/.gemini/config/mcp_config.json" "Google Antigravity"
   say ""
   say "Other clients: \"mcpServers\": { \"aftereffects\": $SERVER_JSON }"
 fi

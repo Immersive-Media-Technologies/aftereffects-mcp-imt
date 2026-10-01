@@ -82,6 +82,7 @@ if ($NoConfig) {
 } else {
   Write-ClientConfig "$env:APPDATA\Claude\claude_desktop_config.json" 'Claude Desktop'
   Write-ClientConfig "$env:USERPROFILE\.cursor\mcp.json" 'Cursor'
+  Write-ClientConfig "$env:USERPROFILE\.gemini\config\mcp_config.json" 'Google Antigravity'
   Write-Host ""
   Write-Host "Other clients: `"mcpServers`": { `"aftereffects`": $serverJson }"
 }
