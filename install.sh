@@ -93,7 +93,6 @@ NODE
   write_config "$HOME/Library/Application Support/Claude/claude_desktop_config.json" "Claude Desktop"
   write_config "$HOME/.cursor/mcp.json" "Cursor"
   say ""
-  say "Claude Code:  claude mcp add aftereffects -e AE_MCP_EXE=\"$AE_APP\" -e MCP_TIMEOUT=120000 -- \"$NODE_BIN\" \"$HERE/dist/index.js\""
   say "Other clients: \"mcpServers\": { \"aftereffects\": $SERVER_JSON }"
 fi
 say ""

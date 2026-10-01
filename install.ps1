@@ -83,7 +83,6 @@ if ($NoConfig) {
   Write-ClientConfig "$env:APPDATA\Claude\claude_desktop_config.json" 'Claude Desktop'
   Write-ClientConfig "$env:USERPROFILE\.cursor\mcp.json" 'Cursor'
   Write-Host ""
-  Write-Host "Claude Code:  claude mcp add aftereffects -e AE_MCP_EXE=`"$AeExe`" -e MCP_TIMEOUT=120000 -- `"$NodeBin`" `"$entry`""
   Write-Host "Other clients: `"mcpServers`": { `"aftereffects`": $serverJson }"
 }
 Write-Host "`nFirst session on a new machine: add AE_MCP_READONLY=1 to env and work on a COPY of the project —"

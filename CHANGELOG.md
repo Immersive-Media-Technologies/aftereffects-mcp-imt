@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **One-click installs.** Claude Desktop extension `aftereffects-mcp-imt.mcpb` (built by
   `npm run build:mcpb` from `mcpb/manifest.json`, attached to every release; Claude Desktop ships
   its own Node.js; the settings dialog carries read-only mode, `eval.run` and the AE path), an
-  «Add to Cursor» install link, `claude mcp add … npx -y @immersive-media-technologies/aftereffects-mcp-imt`,
-  and the package on npm for every other client.
+  «Add to Cursor» install link, and the package on npm for every other client (`npx -y
+@immersive-media-technologies/aftereffects-mcp-imt`).
 - `install.sh` rewritten (English; was Russian with an internal path) and `install.ps1` for
   Windows: check After Effects and Node, build, run `tools/selftest.mjs` against the running AE,
   then write `mcpServers.aftereffects` into Claude Desktop's and Cursor's config files after asking
@@ -25,8 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `engines.node` relaxed to `>=22` (nothing in the code needs 24; Claude Desktop's bundled Node is
   what the extension runs on); binary renamed `aftereffects-mcp-imt`; package published on npm.
-- README: Install rewritten around the client routes (Claude Desktop, Cursor, Claude Code,
-  ChatGPT through a gateway + tunnel, any MCP client).
+- README: Install rewritten around the client routes (Claude Desktop, Cursor, ChatGPT through a
+  gateway + tunnel, any MCP client).
 
 ## [0.3.5] - 2026-09-30
 
