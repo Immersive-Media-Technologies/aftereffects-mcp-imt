@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-10-01
+
+### Added
+
+- **ChatGPT route in one command**: `npx -p @immersive-media-technologies/aftereffects-mcp-imt
+aftereffects-mcp-imt-chatgpt` (`tools/chatgpt-gateway.mjs`, also `npm run chatgpt` from a
+  checkout) starts the server behind supergateway (Streamable HTTP on `127.0.0.1:8001/mcp`) and a
+  tunnel (`cloudflared`, no account, or `ngrok`), prints the public URL for ChatGPT → Settings →
+  Connectors, and stops both on Ctrl+C. Verified end to end through a public ngrok URL:
+  `ae_version_info` answered from After Effects 26.5.
+
+### Changed
+
+- README Install table: client icons, a smaller «Add to Cursor» button.
+
 ## [0.4.0] - 2026-10-01
 
 ### Added
@@ -173,6 +188,7 @@ Initial public release of `@kumoproductions/mcp-aftereffects`.
 
 - Importing a project whose footage is missing can misattribute layer parenting.
 
+[0.4.1]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.1
 [0.4.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.0
 [0.3.5]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.5
 [0.3.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.0
