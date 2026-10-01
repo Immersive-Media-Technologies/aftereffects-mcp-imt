@@ -51,3 +51,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Skills fetched by `skills/ae-motion/fetch-vendor.sh` (not redistributed)
+
+The AE Motion skill routes to topic references from the following repositories. They are **not part of
+this repository**: the script downloads them at pinned commits into `skills/ae-motion/vendor/`
+(git-ignored), each with its own `LICENSE` and a `.source` file.
+
+| Repository                                                                                                  | Commit  | Licence    |
+| ----------------------------------------------------------------------------------------------------------- | ------- | ---------- |
+| https://github.com/Engine-Room-Games/after-effects-mcp (`plugin/skills`)                                    | e0598fd | MIT        |
+| https://github.com/fuuuuuuma/after-effects-agent (`plugins/after-effects-agent/skills/after-effects-agent`) | 8eaf847 | MIT        |
+| https://github.com/LobzyJay/motion-design-with-claude (`skills`)                                            | a4d48c5 | MIT        |
+| https://github.com/iart-ai/motion-design-skills (`skills`)                                                  | 3c129f7 | MIT        |
+| https://github.com/heygen-com/hyperframes (`skills/hyperframes-animation`)                                  | 097250e | Apache-2.0 |

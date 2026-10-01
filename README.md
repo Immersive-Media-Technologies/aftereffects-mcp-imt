@@ -35,6 +35,7 @@ a real dry run, undo-safe operations, honest errors and an installer that says w
 | Render output                | output folder created for `render.add_to_queue` / `render.set_om_settings` (AE fails with "Directory does not exist" otherwise)                                                                                                                                                                                                          | added later upstream                                                                              | —                                                                     | —                                                    |
 | Install                      | `./install.sh`: checks macOS, AE, Node ≥ 24, builds, **runs a live self-test against AE** and prints the exact client config; failures are named (TCC −1743, scripting write access, Node path)                                                                                                                                          | manual                                                                                            | clone, build, install panel, keep panel open                          | `uv run`                                             |
 | Permission policy for agents | reference deny-list in `docs/`: what to forbid is **what Cmd+Z cannot revert** (`eval.run`, `project.new/open`, purge/consolidate, `pref.*`, `render.start`) — everything else is safe to let the agent do                                                                                                                               | consent gate for app-config ops                                                                   | —                                                                     | —                                                    |
+| Motion-graphics agent skill  | **AE Motion** (`skills/ae-motion`): reference image + brief → element breakdown → a natively built, **editable** comp (text/shape layers, real easing, expressions, a CONTROLS rig, Essential Graphics / MOGRT), checked by rendered frames; topic references from five open skill sets fetched on demand                                | —                                                                                                 | —                                                                     | —                                                    |
 | Verified on                  | **AE 2026, macOS + Windows, Eng and Rus UI**                                                                                                                                                                                                                                                                                             | Windows + macOS                                                                                   | AE 2022+                                                              | AE 2026, macOS                                       |
 | License                      | **IMT Non-Commercial** for our work (attribution + link required, free for non-commercial use); upstream code stays MIT                                                                                                                                                                                                                  | MIT                                                                                               | MIT                                                                   | not specified                                        |
 
@@ -47,6 +48,7 @@ Facts about other projects are from their READMEs on GitHub at the time of writi
 - "Apply the revisions from this PDF to the comps it names."
 - "Add a glow to every text layer in _Intro_, 30 % lighter than now."
 - "Render frame 120 of _Main_ so I can see the result."
+- "Here is a reference frame: build this lower third natively — title, subtitle, accent bar — with a Speed slider and the texts in Essential Graphics." (with the AE Motion skill)
 
 The agent combines the 199 operations (11 MCP tools) itself, checking project state between steps.
 
@@ -108,6 +110,30 @@ Client config (Claude Code shown; any MCP client works the same):
 `MCP_TIMEOUT` of 120 s matters: a cold After Effects start plus the first `osascript` does not fit
 the default 30 s. If your client caps tool output (Claude Code: `MAX_MCP_OUTPUT_TOKENS`), raise it
 to 50 000 — `ae_project_info` on a real project is larger than the 25 000 default.
+
+## Motion-graphics skill (AE Motion)
+
+`skills/ae-motion/SKILL.md` teaches the agent to build motion graphics **as an editable After Effects
+project**, not as a rendered clip: titles, lower thirds, kinetic type, logo stings, infographics,
+transitions and overlays made of native text and shape layers, keyframes with real easing,
+expressions driven by a `CONTROLS` null (Speed, Delay, colours, switches) and Essential Graphics
+properties (MOGRT export on request). The workflow:
+
+1. read the reference image and the motion brief; check that the fonts are installed;
+2. show a breakdown table — what is built natively in AE, what is generated source material
+   (illustrations as separate transparent PNGs), the background (still, video footage or
+   generative — never baked into the plate), and what would need an external render (last resort);
+3. build through `ae_do` / `batch.run` (one undo group per step), parent at rest, ease every key;
+4. verify with a few `ae_render_frame` checks (entrance / mid / hold / exit) and report the controls.
+
+The skill routes to topic references (easing and rigging, shapes, text animators, expressions,
+MOGRT, ExtendScript pitfalls, After Effects 2026 changes, motion principles) from five open skill
+sets. They are **fetched, not bundled**: run `skills/ae-motion/fetch-vendor.sh` once (pinned commits,
+download only). The skill also maps those sets' tool names to this server's operations.
+
+Use it as a skill in clients that support them (e.g. copy `skills/ae-motion` into
+`~/.claude/skills/` for Claude Code / Claude Desktop), or point the model at `SKILL.md` in your
+system prompt.
 
 ## Tools
 

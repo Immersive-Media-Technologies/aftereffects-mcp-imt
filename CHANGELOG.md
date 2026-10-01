@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-09-30
+
+### Added
+
+- **AE Motion skill** (`skills/ae-motion/SKILL.md`) — editable motion graphics built natively in After
+  Effects through this server: reference + brief → element breakdown (native AE / generated source /
+  background / external render as last resort) → build with `ae_do` / `batch.run` (folders, a `CONTROLS`
+  rig with Speed / Delay / colour controls, text and shape layers, real easing via `keyframe.set_easing`,
+  expressions driven by the controls, Essential Graphics and MOGRT) → verification with `ae_render_frame`.
+  Backgrounds may be stills, video footage or generative; graphics are never baked into the plate
+  (tracking and Object Matte handled by the user in AE). Covers After Effects 2026 features (variable
+  font axes, SVG/AI import as editable shape layers, Advanced 3D, Object Matte, new expression methods).
+- `skills/ae-motion/fetch-vendor.sh` — fetches the topic references the skill routes to, at pinned
+  commits (download only, not redistributed): Engine-Room-Games/after-effects-mcp, fuuuuuuma/after-effects-agent,
+  LobzyJay/motion-design-with-claude, iart-ai/motion-design-skills (MIT) and the `hyperframes-animation`
+  skill of heygen-com/hyperframes (Apache-2.0). A table in the skill maps their tool names to this
+  server's operations.
+- README: «Motion-graphics skill» section, a comparison row and an example request.
+
 ## [0.3.0] - 2026-09-30 — Immersive Media Technologies fork
 
 First public release of AE-MCP-IMT (the Immersive Media Technologies fork). License: IMT Non-Commercial (`LICENSE`);
@@ -131,6 +150,7 @@ Initial public release of `@kumoproductions/mcp-aftereffects`.
 
 - Importing a project whose footage is missing can misattribute layer parenting.
 
+[0.3.5]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.5
 [0.3.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.0
 [0.2.0]: https://github.com/kumoproductions/mcp-aftereffects/releases/tag/v0.2.0
 [0.1.3]: https://github.com/kumoproductions/mcp-aftereffects/releases/tag/v0.1.3

@@ -22,3 +22,6 @@ coverage/
 runtime/
 smoke-client.mjs
 .ship/
+
+# AE Motion skill: third-party references are fetched by skills/ae-motion/fetch-vendor.sh, not committed
+skills/ae-motion/vendor/
