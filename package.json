@@ -1,6 +1,6 @@
 {
   "name": "@immersive-media-technologies/aftereffects-mcp-imt",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "AE-MCP-IMT — MCP server for Adobe After Effects built for autonomous AI agents (macOS + Windows): 199 undo-grouped operations behind two tools, a real dry run, localized-AE-safe effect presets, live self-test installer. By Immersive Media Technologies (fork of kumoproductions/mcp-aftereffects).",
   "keywords": [
     "adobe",
