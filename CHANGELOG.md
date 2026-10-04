@@ -13,6 +13,12 @@ layer.create_footage, layer.create_text with Cyrillic), `ae_comp_info`, `ae_rend
 
 ### Fixed
 
+- Windows: the server never reached After Effects when its own path contained a space —
+  `AfterFX.exe -r <path>` cuts the path at the first space, quotes or not. That is every Claude
+  Desktop install (`…\Claude Extensions\…`) and any clone under a folder with a space: the
+  request timed out after 60 s with «never picked up by AE». The dispatcher is now started
+  through a one-line `launch.jsx` under the runtime root (DOS 8.3 short name when even that
+  path has a space), which also pins the mailbox like the macOS bootstrap.
 - Windows: `install.ps1` did not parse in Windows PowerShell 5.1 (a non-ASCII dash in a string
   read through the ANSI code page). The script is ASCII-only now, guarded by a test.
 - `npm version` failed on a `sync-server-version.mjs` / `server.json` pair that is not in the
