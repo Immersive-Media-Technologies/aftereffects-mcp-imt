@@ -2,7 +2,7 @@
 // it nests an ExtendScript string inside an AppleScript string inside an argv
 // element, and a quoting mistake at either layer only surfaces on a real Mac.
 
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -21,17 +21,27 @@ describe("buildLaunchPlan (win32)", () => {
   it("spawns AfterFX.exe -r with a space-free bootstrap that evalFiles the dispatcher", () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "aemcp-launch-"));
     try {
-      const dispatcher =
-        "C:/Users/me/AppData/Roaming/Claude/Claude Extensions/x/server/jsx/dispatcher.jsx";
-      const launch = windowsLaunchJsx("C:/t/run time", dispatcher, root);
-      const plan = buildLaunchPlan(AE_WIN, "win32", "C:/t/run time", dispatcher, root);
+      // the real jsx/ folder, reached through a path with a space
+      const pkgWithSpace = path.join(root, "Claude Extensions", "x", "server");
+      mkdirSync(path.join(pkgWithSpace, "jsx"), { recursive: true });
+      for (const f of readdirSync(path.join(process.cwd(), "jsx")))
+        copyFileSync(path.join(process.cwd(), "jsx", f), path.join(pkgWithSpace, "jsx", f));
+      const dispatcher = path.join(pkgWithSpace, "jsx", "dispatcher.jsx");
+      const runtimeRoot = path.join(root, "tmp");
+      const launch = windowsLaunchJsx("C:/t/run time", dispatcher, runtimeRoot);
+      const plan = buildLaunchPlan(AE_WIN, "win32", "C:/t/run time", dispatcher, runtimeRoot);
       expect(plan.command).toBe(AE_WIN);
       expect(plan.args[0]).toBe("-r");
       expect(plan.args[1]).not.toContain("Claude Extensions");
-      expect(launch).toBe(windowsShortPath(path.join(root, "launch.jsx")));
-      const body = readFileSync(path.join(root, "launch.jsx"), "utf8");
+      expect(launch).toBe(windowsShortPath(path.join(runtimeRoot, "launch.jsx")));
+      const body = readFileSync(path.join(runtimeRoot, "launch.jsx"), "utf8");
       expect(body).toContain("$.global.AE_MCP_RUNTIME_DIR_OVERRIDE = 'C:/t/run time';");
-      expect(body).toContain(`$.evalFile('${dispatcher}');`);
+      // the dispatcher and its #included siblings are copied under the runtime root — the
+      // package path (invisible to AE under a Store-installed Claude) is never referenced
+      expect(body).not.toContain("Claude Extensions");
+      expect(body).toContain("/jsx/dispatcher.jsx');");
+      for (const f of ["dispatcher.jsx", "helpers.jsx", "json2.jsx", "import.jsx", "export.jsx"])
+        expect(readFileSync(path.join(runtimeRoot, "jsx", f), "utf8").length).toBeGreaterThan(100);
       expect(plan.diagnoseExit).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });

@@ -21,7 +21,7 @@
 // permission was denied — so the transport watches it for fast failure.
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { DISPATCHER_JSX, RUNTIME_DIR, RUNTIME_ROOT } from "../config.js";
@@ -118,11 +118,24 @@ export function windowsLaunchJsx(
   runtimeRoot: string = RUNTIME_ROOT,
 ): string {
   const bootstrap = path.join(runtimeRoot, "launch.jsx");
+  // The dispatcher is COPIED next to the bootstrap, not referenced in place: a
+  // Claude Desktop installed from the Microsoft Store runs under MSIX
+  // virtualization, so the extension's `%APPDATA%\Claude\Claude Extensions\…`
+  // path exists for the server process but not for After Effects («Unable to
+  // execute script at line 2. File or folder does not exist»). The temp folder
+  // is the one place both sides see.
+  // The whole jsx/ folder travels: dispatcher.jsx #includes its siblings by relative path.
+  const jsxCopyDir = path.join(runtimeRoot, "jsx");
+  const dispatcherCopy = path.join(jsxCopyDir, path.basename(dispatcherJsx));
   try {
-    mkdirSync(runtimeRoot, { recursive: true });
+    mkdirSync(jsxCopyDir, { recursive: true });
+    for (const f of readdirSync(path.dirname(dispatcherJsx))) {
+      if (f.endsWith(".jsx"))
+        copyFileSync(path.join(path.dirname(dispatcherJsx), f), path.join(jsxCopyDir, f));
+    }
     writeFileSync(
       bootstrap,
-      `$.global.AE_MCP_RUNTIME_DIR_OVERRIDE = ${jsxPath(runtimeDir)};\n$.evalFile(${jsxPath(dispatcherJsx)});\n`,
+      `$.global.AE_MCP_RUNTIME_DIR_OVERRIDE = ${jsxPath(runtimeDir)};\n$.evalFile(${jsxPath(dispatcherCopy)});\n`,
       "utf8",
     );
   } catch {
