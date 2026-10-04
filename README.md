@@ -88,22 +88,38 @@ After Effects start plus the first `osascript` does not fit the default 30 s. If
 tool output, raise the cap to 50 000 — `ae_project_info` on a real
 project is larger than the 25 000 default.
 
-**From source, with a live self-test** (the route we run ourselves): clone, then `./install.sh` on
-macOS or `.\install.ps1` on Windows. The script checks After Effects and Node (absolute path),
-builds `dist/`, runs a live round-trip with the running After Effects (`tools/selftest.mjs`) and
-names what is wrong (−1743, scripting file access, Node path), then — after asking — writes the
-entry into Claude Desktop's, Cursor's and Google Antigravity's config files, backing them up first. `--no-config` only
-prints the snippet; `--yes` skips the questions.
+### macOS
+
+Verified daily (After Effects 2026). The dispatcher is sent through AppleScript (`osascript` →
+DoScript); the first call asks for the Automation permission (error −1743 means it was denied).
+From source, with a live self-test — the route we run ourselves:
 
 ```bash
 git clone https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt.git
 cd aftereffects-mcp-imt && ./install.sh
 ```
 
-**Windows.** The dispatcher is launched as `AfterFX.exe -r`; set `AE_MCP_EXE` to your `AfterFX.exe`
-when After Effects is not under `C:\Program Files\Adobe`. Verified on Windows 11 (ARM) with After
-Effects 2026 (2026-10-04). On a machine without a supported GPU, AE opens a «System Compatibility
-Report» before the project — dismiss it, scripting is blocked while it is up.
+The script checks After Effects and Node (absolute path), builds, pings the running AE and names
+what is wrong (−1743, scripting file access, Node path), then — after asking — writes the entry
+into Claude Desktop's, Cursor's and Google Antigravity's config files, backing them up first.
+`--no-config` only prints the snippet; `--yes` skips the questions.
+
+### Windows
+
+Verified on Windows 11 with After Effects 2026 (`install.ps1`, self-test, `ae_do`, `ae_comp_info`,
+`ae_render_frame`). The dispatcher is launched as `AfterFX.exe -r` through a short bootstrap under
+the temp folder — AfterFX.exe cuts the `-r` path at the first space, so the package path (Claude
+Desktop's `Claude Extensions`, any folder with a space) never reaches the command line. Set
+`AE_MCP_EXE` to your `AfterFX.exe` when After Effects is not under `C:\Program Files\Adobe`.
+
+- **Claude Desktop:** the `.mcpb` has no file association on Windows — if a double-click shows an
+  app picker, drag the file onto Settings → Extensions instead.
+- **From source:** `.\install.ps1` (if scripts are blocked:
+  `powershell -ExecutionPolicy Bypass -File .\install.ps1`). Node.js 22+ from nodejs.org.
+- **Scripting access:** AE → Edit → Preferences → Scripting & Expressions → «Allow Scripts to
+  Write Files and Access Network» must be on.
+- **No supported GPU** (a VM, an old machine): AE opens a «System Compatibility Report» before the
+  project; dismiss it — scripting is blocked while it is up and the server reports a timeout.
 
 | Variable                  | Default     | Meaning                                                                          |
 | ------------------------- | ----------- | -------------------------------------------------------------------------------- |
