@@ -1,9 +1,9 @@
-# AE-MCP-IMT — install on Windows (PowerShell 5.1+).
+# AE-MCP-IMT - install on Windows (PowerShell 5.1+).
 #   .\install.ps1              check -> build -> live self-test -> write client configs (asks first)
 #   .\install.ps1 -Yes         same, without questions
 #   .\install.ps1 -NoConfig    check, build and self-test only; print the config instead
 # If scripts are blocked: powershell -ExecutionPolicy Bypass -File .\install.ps1
-# Not verified by Immersive Media Technologies on Windows yet (we run macOS) — reports welcome.
+# Not verified by Immersive Media Technologies on Windows yet (we run macOS) - reports welcome.
 param([switch]$Yes, [switch]$NoConfig)
 $ErrorActionPreference = 'Continue'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -13,7 +13,7 @@ function Warn($m) { Write-Host " warn  $m" -ForegroundColor Yellow }
 function Bad($m)  { Write-Host " FAIL  $m" -ForegroundColor Red; $script:Fail = $true }
 function Ask($q)  { if ($Yes) { return $true }; $r = Read-Host "$q [y/N]"; return ($r -eq 'y' -or $r -eq 'Y') }
 
-Write-Host "`nAE-MCP-IMT — environment check`n-----------------------------------------------"
+Write-Host "`nAE-MCP-IMT - environment check`n-----------------------------------------------"
 $AeExe = $null
 if ($env:AE_MCP_EXE -and (Test-Path $env:AE_MCP_EXE)) { $AeExe = $env:AE_MCP_EXE }
 else {
@@ -27,8 +27,8 @@ if ($AeExe) { Ok "After Effects: $AeExe" } else { Bad "After Effects 2024-2026 n
 $NodeBin = (Get-Command node -ErrorAction SilentlyContinue).Source
 if ($NodeBin) {
   $major = [int]((& $NodeBin -v) -replace '^v(\d+).*', '$1')
-  if ($major -ge 22) { Ok "Node $(& $NodeBin -v) — $NodeBin" } else { Bad "Node.js >= 22 required (found $(& $NodeBin -v))" }
-} else { Bad "Node.js >= 22 not found — install from https://nodejs.org or use the Claude Desktop extension (.mcpb), which needs no Node" }
+  if ($major -ge 22) { Ok "Node $(& $NodeBin -v) - $NodeBin" } else { Bad "Node.js >= 22 required (found $(& $NodeBin -v))" }
+} else { Bad "Node.js >= 22 not found - install from https://nodejs.org or use the Claude Desktop extension (.mcpb), which needs no Node" }
 if ($Fail) { Write-Host "`nStopped." -ForegroundColor Red; exit 1 }
 
 Write-Host "`nBuild`n-----------------------------------------------"
@@ -41,7 +41,7 @@ if (Test-Path 'dist\index.js') { Ok 'server built: dist\index.js' } else { Bad '
 
 Write-Host "`nLive check against After Effects`n-----------------------------------------------"
 if (-not (Get-Process -Name 'AfterFX' -ErrorAction SilentlyContinue)) {
-  Warn 'After Effects is not running — skipping the live check (start it and run .\install.ps1 again)'
+  Warn 'After Effects is not running - skipping the live check (start it and run .\install.ps1 again)'
 } else {
   $env:AE_MCP_EXE = $AeExe
   $out = & $NodeBin "$Here\tools\selftest.mjs" 2>$null | Out-String
@@ -86,5 +86,5 @@ if ($NoConfig) {
   Write-Host ""
   Write-Host "Other clients: `"mcpServers`": { `"aftereffects`": $serverJson }"
 }
-Write-Host "`nFirst session on a new machine: add AE_MCP_READONLY=1 to env and work on a COPY of the project —"
+Write-Host "`nFirst session on a new machine: add AE_MCP_READONLY=1 to env and work on a COPY of the project -"
 Write-Host "the server edits the open document. MCP_TIMEOUT=120000: a cold AE start does not fit the default 30 s.`n"
