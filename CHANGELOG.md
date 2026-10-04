@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2026-10-04
+
+Windows verified: Windows 11 (ARM, Parallels) with After Effects 2026 (26.5) — `install.ps1`,
+`tools/selftest.mjs`, `ae_version_info`, `ae_project_info`, `ae_do` (comp.create,
+layer.create_footage, layer.create_text with Cyrillic), `ae_comp_info`, `ae_render_frame`.
+
+### Fixed
+
+- Windows: `install.ps1` did not parse in Windows PowerShell 5.1 (a non-ASCII dash in a string
+  read through the ANSI code page). The script is ASCII-only now, guarded by a test.
+- `npm version` failed on a `sync-server-version.mjs` / `server.json` pair that is not in the
+  repository (upstream leftover); the version script only rewrites the CHANGELOG now.
+
+### Notes
+
+- On a machine without a supported GPU After Effects opens a «System Compatibility Report»
+  before the project; scripting is blocked until it is dismissed (the server reports a timeout
+  with that hint).
+
 ## [0.4.2] - 2026-10-01
 
 ### Fixed
@@ -199,6 +218,7 @@ Initial public release of `@kumoproductions/mcp-aftereffects`.
 
 - Importing a project whose footage is missing can misattribute layer parenting.
 
+[0.4.3]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.3
 [0.4.2]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.2
 [0.4.1]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.1
 [0.4.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.0

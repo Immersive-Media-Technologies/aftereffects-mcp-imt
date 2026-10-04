@@ -12,7 +12,7 @@ builders can use the same, battle-tested layer.
 
 **macOS and Windows · After Effects 2024–2026 · Node.js 22+ (or none with the Claude Desktop extension).** After Effects itself runs only on macOS and
 Windows, so Linux is not a target. macOS is what we run every day; the Windows transport (`AfterFX.exe -r`)
-is inherited from upstream and works the same way — reports from Windows users are welcome.
+is verified on Windows 11 with After Effects 2026 — reports from Windows users are still welcome.
 
 > [!CAUTION]
 > This tool edits real After Effects projects and sends project contents (comp and layer names,
@@ -93,7 +93,7 @@ macOS or `.\install.ps1` on Windows. The script checks After Effects and Node (a
 builds `dist/`, runs a live round-trip with the running After Effects (`tools/selftest.mjs`) and
 names what is wrong (−1743, scripting file access, Node path), then — after asking — writes the
 entry into Claude Desktop's, Cursor's and Google Antigravity's config files, backing them up first. `--no-config` only
-prints the snippet; `--yes` skips the questions. The Windows script is not run by us yet.
+prints the snippet; `--yes` skips the questions.
 
 ```bash
 git clone https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt.git
@@ -101,7 +101,9 @@ cd aftereffects-mcp-imt && ./install.sh
 ```
 
 **Windows.** The dispatcher is launched as `AfterFX.exe -r`; set `AE_MCP_EXE` to your `AfterFX.exe`
-when After Effects is not under `C:\Program Files\Adobe`. Inherited from upstream, not run by us.
+when After Effects is not under `C:\Program Files\Adobe`. Verified on Windows 11 (ARM) with After
+Effects 2026 (2026-10-04). On a machine without a supported GPU, AE opens a «System Compatibility
+Report» before the project — dismiss it, scripting is blocked while it is up.
 
 | Variable                  | Default     | Meaning                                                                          |
 | ------------------------- | ----------- | -------------------------------------------------------------------------------- |
