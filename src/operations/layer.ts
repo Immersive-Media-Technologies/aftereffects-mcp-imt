@@ -128,17 +128,36 @@ registerOp({
 registerOp({
   name: "layer.create_null",
   category: "layer",
-  description: "Create a null object layer.",
+  description:
+    "Create a null object layer. threeD + position make it a 3D anchor in one call (e.g. the scene origin [0,0,0] of a tracked camera's ground plane); parent/scale follow with layer.set_parent / transform.set.",
   params: [
     { name: "comp", type: "any", description: "Comp name or id", required: true },
     { name: "name", type: "string", description: "Layer name", required: false },
+    { name: "threeD", type: "boolean", description: "Make it a 3D layer", required: false },
+    {
+      name: "position",
+      type: "array",
+      description: "[x,y] or [x,y,z] — comp coordinates ([0,0,0] = scene origin for 3D)",
+      required: false,
+    },
+    {
+      name: "anchorPoint",
+      type: "array",
+      description: "[x,y] or [x,y,z]; default is the null's centre [50,50(,0)]",
+      required: false,
+    },
   ],
   toJsx(args) {
     return `
             ${jsxCompPreamble(args)}
             var _layer = _comp.layers.addNull();
             ${args.name ? `_layer.name = ${jsxVal(args.name)};` : ""}
-            return { ok: true, index: _layer.index, name: _layer.name };
+            if (${jsxVal(!!args.threeD)}) _layer.threeDLayer = true;
+            var _np = ${jsxVal(args.position ?? null)};
+            var _na = ${jsxVal(args.anchorPoint ?? null)};
+            if (_na !== null) _layer.transform.anchorPoint.setValue(_na);
+            if (_np !== null) _layer.transform.position.setValue(_np);
+            return { ok: true, index: _layer.index, name: _layer.name, threeD: _layer.threeDLayer, position: AE.valueToJson(_layer.transform.position.value) };
         `;
   },
 });

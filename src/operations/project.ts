@@ -753,7 +753,13 @@ registerOp({
             }
             app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES);
             var _p = app.newProject();
-            if (!_p) return { ok: false, error: "app.newProject returned null" };
+            // Live 09.10.2026 (AE 26.5): on an empty, untitled project
+            // app.newProject() returns null although the project IS the new
+            // empty one — treat "no file, no items" as success.
+            if (!_p) {
+                if (!app.project.file && app.project.numItems === 0) return { ok: true, numItems: 0, note: "app.newProject returned null on an already-empty untitled project" };
+                return { ok: false, error: "app.newProject returned null" };
+            }
             return { ok: true, numItems: _p.numItems };
         `;
   },

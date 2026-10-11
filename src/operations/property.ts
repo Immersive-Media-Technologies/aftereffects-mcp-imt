@@ -80,20 +80,91 @@ registerOp({
             ${jsxCompLayerPreamble(args)}
             var _propPath = ${jsxVal(args.property)};
             ${jsxPropertyLookup()}
-            var _val;
-            if (${jsxVal(args.time ?? null)} !== null) {
-                _val = _node.valueAtTime(${jsxVal(args.time)}, false);
-            } else {
-                _val = _node.value;
-            }
-            return {
+            // NO_VALUE groups (an effect's status rows such as the 3D Camera
+            // Tracker's "Average error: 1.06 px", plugin groups) and a few plugin
+            // properties throw on read (irrealix: "division by zero" on a
+            // Noise Shape Center). The name still carries information — the
+            // tracker reports its state in property NAMES — so a failed read
+            // returns value null + valueError instead of failing the call.
+            var _val = null, _valErr = null;
+            try {
+                if (${jsxVal(args.time ?? null)} !== null) {
+                    _val = _node.valueAtTime(${jsxVal(args.time)}, false);
+                } else {
+                    _val = _node.value;
+                }
+            } catch (eVal) { _valErr = AE.errText(eVal); }
+            var _out = {
                 ok: true,
                 name: _node.name,
                 matchName: _node.matchName,
-                value: AE.valueToJson(_val),
+                value: _valErr === null ? AE.valueToJson(_val) : null,
                 numKeys: _node.numKeys || 0,
                 hasExpression: _node.canSetExpression ? _node.expressionEnabled : false
             };
+            if (_valErr !== null) _out.valueError = _valErr;
+            return _out;
+        `;
+  },
+});
+
+registerOp({
+  name: "property.sample",
+  category: "property",
+  readOnly: true,
+  description:
+    "Read several properties of one layer at several times in ONE call (valueAtTime, pre-expression=false). The motion-verification atom: a tracked camera's Position / Orientation / Zoom at [0, mid, end], a null's path, an effect parameter across a shot. Unreadable properties (NO_VALUE groups, plugin quirks) come back as value null + valueError, never failing the call.",
+  params: [
+    { name: "comp", type: "any", description: "Comp name or id", required: true },
+    {
+      name: "layer",
+      type: "any",
+      description: "1-based layer index, or the layer name",
+      required: true,
+    },
+    {
+      name: "properties",
+      type: "array",
+      description:
+        'Array of property paths, e.g. [["Transform","Position"],["Transform","Orientation"],["Camera Options","Zoom"]]',
+      required: true,
+    },
+    {
+      name: "times",
+      type: "array",
+      description:
+        "Times in seconds. Omit for [0, duration/2, duration - one frame] of the comp.",
+      required: false,
+    },
+  ],
+  toJsx(args) {
+    return `
+            ${jsxCompLayerPreamble(args)}
+            var _paths = ${jsxVal(args.properties)};
+            var _times = ${jsxVal(args.times ?? null)};
+            if (_times === null) _times = [0, _comp.duration / 2, Math.max(0, _comp.duration - _comp.frameDuration)];
+            if (!(_paths instanceof Array) || _paths.length === 0) return { ok: false, error: "properties must be a non-empty array of paths" };
+            var _rows = [];
+            for (var _pi0 = 0; _pi0 < _paths.length; _pi0++) {
+                var _propPath = _paths[_pi0];
+                var _node = _layer, _miss = null;
+                for (var _pi = 0; _pi < _propPath.length; _pi++) {
+                    var _next = null;
+                    try { _next = _node.property(_propPath[_pi]); } catch (e) {}
+                    if (!_next) { _miss = "property segment '" + _propPath[_pi] + "' not found at depth " + _pi; break; }
+                    _node = _next;
+                }
+                if (_miss) { _rows.push({ path: _propPath, error: _miss }); continue; }
+                var _vals = [], _err = null;
+                for (var _ti = 0; _ti < _times.length; _ti++) {
+                    try { _vals.push(AE.valueToJson(_node.valueAtTime(_times[_ti], false))); }
+                    catch (eV) { _vals.push(null); if (_err === null) _err = AE.errText(eV); }
+                }
+                var _row = { path: _propPath, name: _node.name, matchName: _node.matchName, numKeys: _node.numKeys || 0, values: _vals };
+                if (_err !== null) _row.valueError = _err;
+                _rows.push(_row);
+            }
+            return { ok: true, layer: _layer.name, times: _times, rows: _rows };
         `;
   },
 });

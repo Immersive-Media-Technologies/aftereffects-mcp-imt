@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `property.sample` — several properties of one layer at several times in one call (the
+  motion-verification atom: a tracked camera's Position / Orientation / Zoom at start / middle / end,
+  an effect parameter across a shot). Times default to `[0, duration/2, end]`.
+- `layer.create_null` takes `threeD`, `position` and `anchorPoint`, so a 3D anchor at the scene
+  origin is one operation (the "null at [0,0,0] on the ground plane" step of attaching a splat or a
+  model to a tracked camera).
+
+### Fixed
+
+- `property.get` no longer fails on properties whose value cannot be read: NO_VALUE status rows
+  (the 3D Camera Tracker reports "Average error: 1.06 px" in a property *name*), plug-in groups and
+  the odd plug-in property that throws on read (irrealix: "division by zero"). The call returns
+  `name` + `value: null` + `valueError` instead of a JSX_THROW. Seen live with AE 26.5 (Russian UI).
+- `project.new` on an empty, untitled project: `app.newProject()` returns `null` there although the
+  project is the new empty one — reported as success instead of "app.newProject returned null"
+  (AE 26.5, live 09.10.2026).
+
 ## [0.4.4] - 2026-10-04
 
 ### Fixed
