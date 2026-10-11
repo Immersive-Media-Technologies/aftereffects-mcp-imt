@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.5] - 2026-10-11
 
 Safety and verification for an agent that works on its own, plus the After Effects skill —
 drawn from a survey of the AE-agent landscape (October 2026) and rewritten for this server.
@@ -300,6 +300,7 @@ Initial public release of `@kumoproductions/mcp-aftereffects`.
 
 - Importing a project whose footage is missing can misattribute layer parenting.
 
+[0.5.5]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.5
 [0.4.4]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.3
 [0.4.2]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.2
