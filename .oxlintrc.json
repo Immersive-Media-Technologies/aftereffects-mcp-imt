@@ -15,5 +15,5 @@
     "builtin": true,
     "node": true
   },
-  "ignorePatterns": ["dist", "node_modules", "jsx/**"]
+  "ignorePatterns": ["dist", "node_modules", "jsx/**", "skills/**"]
 }
