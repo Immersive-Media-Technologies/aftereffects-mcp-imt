@@ -28,6 +28,7 @@ import "./font.js";
 import "./egp.js";
 import "./viewer.js";
 import "./pref.js";
+import "./safety.js";
 
 // eval.run executes arbitrary ExtendScript (file I/O, system.callSystem,
 // Socket, …). Opt-in: it enters the registry only when AE_MCP_ENABLE_EVAL=1

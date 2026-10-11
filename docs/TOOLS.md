@@ -4,19 +4,20 @@ Generated from `src/tools/**` via `npm run docs:tools` — do not edit by hand. 
 
 `ae_do`'s operation registry (`layer.*`, `keyframe.*`, …) is discoverable at runtime via `ae_catalog` and is **not** listed in this file.
 
-11 tools across 4 groups.
+12 tools across 4 groups.
 
 ## Inspect
 
 Read-only project/comp/layer introspection.
 
-| Tool              | Description                                                                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ae_project_info` | Project-level info: file path, dirty flag, all items with type/summary, active item.                                                                         |
-| `ae_comp_info`    | Detailed comp info: size, fps, duration, work area, motion blur, layer summaries.                                                                            |
-| `ae_layer_info`   | Full layer info: transform, effects, masks, text, shape contents, keyframes.                                                                                 |
-| `ae_version_info` | AE version, build, capabilities (saveFrameToPng, app.effects, Socket).                                                                                       |
-| `ae_context`      | Ambient context: project state, active comp, selected layers, item list, AE.\* helpers, ES3 rules, and the undo contract (every call = one auto undo group). |
+| Tool              | Description                                                                                                                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ae_project_info` | Project-level info: file path, dirty flag, all items with type/summary, active item.                                                                                                                       |
+| `ae_comp_info`    | Detailed comp info: size, fps, duration, work area, motion blur, layer summaries.                                                                                                                          |
+| `ae_layer_info`   | Full layer info: transform, effects, masks, text, shape contents, keyframes.                                                                                                                               |
+| `ae_version_info` | AE version, build, capabilities (saveFrameToPng, app.effects, Socket).                                                                                                                                     |
+| `ae_context`      | Ambient context: project state, active comp, selected layers, item list, AE.\* helpers, ES3 rules, and the undo contract (every call = one auto undo group).                                               |
+| `ae_dialogs`      | List the modal dialogs After Effects is showing, or dismiss one by its cancel action (what Escape does: a warning is acknowledged, a 'save changes?' question is cancelled — never answered for the user). |
 
 ## Document
 

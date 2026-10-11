@@ -7,8 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Safety and verification for an agent that works on its own, plus the After Effects skill —
+drawn from a survey of the AE-agent landscape (October 2026) and rewritten for this server.
+
 ### Added
 
+- **Checkpoints:** `project.checkpoint {label}` saves the project and keeps a copy of the .aep
+  next to it (`.ae-mcp-checkpoints/<project>/`, or `AE_MCP_CHECKPOINT_DIR`); `project.revert {id}`
+  brings it back (the current state is kept as `…-before-revert` first); `project.list_checkpoints`.
+  Undo covers a session — a checkpoint survives a crash, a relaunch and a `project.open`.
+  Verified live on AE 26.5: checkpoint → edits → revert → `comp.diff` reports no change.
+- **`batch.run { atomic: true }`** — all or nothing: the batch runs in its own undo group with a
+  marker folder; on the first failure it is undone and the response says `rollback.verified`.
+  Verified live: a null created by the first child vanished after the second child failed.
+- **`comp.snapshot` / `comp.diff`** — a per-layer fingerprint (id, name, source, in/out/start,
+  parent, enabled, 3D, key count, expressions, effects, transform values) with one hash. Take one
+  before a mutation and pass it to `comp.diff` after: added / removed / changed layers with the
+  changed fields, in tens of tokens instead of `ae_comp_info`.
+- **`expression.validate`** — force-evaluates every enabled expression of a comp (or one layer) at
+  a few times and lists the failing ones with their text. **`project.audit`** — missing footage,
+  missing/substituted fonts, expression errors in every comp, unused footage, empty comps and
+  folders, duplicate solids, each with a severity: the first call on a project you did not build.
+- **`ae_dialogs`** tool and a **`DIALOG_OPEN`** error: a modal dialog is the usual reason a script
+  never runs; a timeout now scans for one (Windows: PowerShell; macOS: CGWindowList + Accessibility)
+  and reports its text, and `ae_dialogs { action: "dismiss", id }` closes it by its cancel action
+  (a warning is acknowledged, a "save changes?" question cancelled — never answered for the user).
+  Ported from upstream 0.3.1 (MIT).
+- **Project lock** — `AE_MCP_PROJECT_LOCK=/path/to/project.aep`: writes are allowed only while
+  that project is the open one; reads stay free, `project.open` may open the locked file itself,
+  `project.new` and a Save As elsewhere are refused. For handing an agent one file in an AE that
+  also holds your own work. Shown in the startup policy line.
+- **`ae_render_frame { compareWith }`** — pixel metrics against an earlier frame (changed ratio,
+  mean / max difference, bounding box of the change) — "did my edit change the picture, and
+  where" without reading the image. Verified live: a 200×200 solid came back as a 200×200 bbox.
+- `project.save_increment {comment}` (name_v001 → name_v002, never overwrites),
+  `layer.stagger` (Quick Offset for a set of layers, seconds or frames, start or in-point),
+  `layer.fit_to_comp` (fit / fill / width / height / stretch), `layer.align` (comp, action-safe,
+  title-safe or first-layer reference, by rendered bounds), `comp.trim_to_content`.
 - `property.sample` — several properties of one layer at several times in one call (the
   motion-verification atom: a tracked camera's Position / Orientation / Zoom at start / middle / end,
   an effect parameter across a shot). Times default to `[0, duration/2, end]`.
@@ -18,8 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `property.get` no longer fails on properties whose value cannot be read: NO_VALUE status rows
-  (the 3D Camera Tracker reports "Average error: 1.06 px" in a property *name*), plug-in groups and
+- ExtendScript misparses chained `?:` — `comp.diff` reported "3D" for "in"/"startTime" until the
+  labels moved to a lookup table; the same pattern is avoided everywhere in the new operations.
+- `property.get` no longer fails on properties whose value cannot be read: NO*VALUE status rows
+  (the 3D Camera Tracker reports "Average error: 1.06 px" in a property \_name*), plug-in groups and
   the odd plug-in property that throws on read (irrealix: "division by zero"). The call returns
   `name` + `value: null` + `valueError` instead of a JSX_THROW. Seen live with AE 26.5 (Russian UI).
 - `project.new` on an empty, untitled project: `app.newProject()` returns `null` there although the

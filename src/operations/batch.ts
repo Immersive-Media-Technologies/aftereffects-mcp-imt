@@ -5,6 +5,7 @@
 import { summarizeParams, validateOpArgs } from "../opschema.js";
 import { denyOperation, denyUnregisteredOperation } from "../policy.js";
 import { denyAppConfig, getOp, jsxVal, registerOp, wantsUndoGroup } from "../registry.js";
+import { UNDO_COMMAND_ID } from "./command.js";
 
 registerOp({
   name: "batch.run",
@@ -32,10 +33,21 @@ registerOp({
       description: "Stop executing remaining ops if one fails (default false)",
       required: false,
     },
+    {
+      name: "atomic",
+      type: "boolean",
+      description:
+        "All or nothing: if any child fails, the whole batch is undone (one Undo of its own group) and the response says rollback.verified. Implies stopOnError. The default (false) leaves the successful children applied.",
+      required: false,
+    },
   ],
   // The wrapper itself mutates nothing; each child is gated individually below,
   // so a batch of read-only operations stays usable under AE_MCP_READONLY.
   readOnly: true,
+  // atomic: the batch opens and closes its OWN undo group so it can call Undo
+  // after a failure — inside the dispatcher's group that undo would resolve
+  // against the still-open group and revert nothing (see Operation.undoGroup).
+  undoGroup: (args) => !args.atomic,
   toJsx(args) {
     if (!Array.isArray(args.ops)) {
       return `
@@ -43,7 +55,8 @@ registerOp({
             `;
     }
     const ops = args.ops as Array<{ operation?: unknown; args?: unknown }>;
-    const stopOnError = !!args.stopOnError;
+    const atomic = !!args.atomic;
+    const stopOnError = !!args.stopOnError || atomic;
 
     // Generate JSX for each operation inline. Every child goes through the same
     // policy + argument validation gate as a top-level ae_do call — batching
@@ -128,6 +141,41 @@ registerOp({
             `);
     }
 
+    if (atomic) {
+      // Marker folder created first inside the batch's own group: after Undo
+      // it must be gone — that is the proof the rollback really happened
+      // (the idea comes from yumehiko/ae-agent-skills' scene transactions).
+      return `
+            var _results = [];
+            var _failed = 0;
+            var _stopped = false;
+            var _markerName = "__ae_mcp_atomic_" + new Date().getTime();
+            app.beginUndoGroup("batch.run (atomic)");
+            var _marker = app.project.items.addFolder(_markerName);
+            var _markerId = _marker.id;
+            ${opBlocks.join("\n")}
+            function _markerAlive() { for (var _mi = 1; _mi <= app.project.numItems; _mi++) { if (app.project.item(_mi).id === _markerId) return true; } return false; }
+            if (_failed === 0) {
+                try { _marker.remove(); } catch (eMk) {}
+                app.endUndoGroup();
+                return { ok: true, error: null, results: _results, count: _results.length, failed: 0, atomic: true, rollback: { performed: false } };
+            }
+            app.endUndoGroup();
+            var _undone = false;
+            try { app.executeCommand(${UNDO_COMMAND_ID}); _undone = true; } catch (eUndo) {}
+            var _verified = _undone && !_markerAlive();
+            if (!_verified) { try { if (_markerAlive()) _marker.remove(); } catch (eRm) {} }
+            return {
+                ok: false,
+                error: _failed + " of " + _results.length + " operations failed — " + (_verified ? "the whole batch was undone (rollback verified)" : "ROLLBACK NOT VERIFIED: check the comp (comp.diff) and undo by hand (project.undo)"),
+                results: _results,
+                count: _results.length,
+                failed: _failed,
+                atomic: true,
+                rollback: { performed: _undone, verified: _verified }
+            };
+        `;
+    }
     return `
             var _results = [];
             var _failed = 0;

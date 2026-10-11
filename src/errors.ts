@@ -18,6 +18,8 @@ export type AeErrorCode =
   | "AE_NOT_FOUND"
   /** AE never wrote a response before the deadline. */
   | "TIMEOUT"
+  /** AE is showing a modal dialog — no script runs until it is closed (see ae_dialogs). */
+  | "DIALOG_OPEN"
   /** Node-side failure: spawn, filesystem, JSON write. */
   | "TRANSPORT"
   /** dispatcher.jsx failed before it could run our code. */

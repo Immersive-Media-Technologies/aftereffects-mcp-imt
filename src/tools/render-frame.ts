@@ -12,6 +12,7 @@ import { readOnlyMode } from "../policy.js";
 import { RENDER_FRAME_FN } from "../operations/snippets.js";
 import { jsxVal } from "../registry.js";
 import type { AeTransport } from "../transport/AeTransport.js";
+import type { ToolResult } from "./types.js";
 import { defineTool, toMcpResult } from "./define-tool.js";
 
 interface RenderFramePayload {
@@ -64,6 +65,12 @@ export const renderFrameTool = defineTool({
       .boolean()
       .optional()
       .describe("If true, `time` is interpreted relative to comp.displayStartTime. Default false."),
+    compareWith: z
+      .string()
+      .optional()
+      .describe(
+        "Absolute path of an earlier PNG (same comp size) to compare the new frame against. Adds `compare`: changedRatio (0..1 of pixels that differ), meanAbsDiff (0..1), bbox of the change — 'did my edit change the picture, and where' without reading the image.",
+      ),
     colorManaged: z
       .enum(["auto", "off"])
       .optional()
@@ -74,6 +81,81 @@ export const renderFrameTool = defineTool({
       ),
   },
   handler: async (args, transport) => {
+    const r = await renderOnce(args, transport);
+    if (!args.compareWith || r.isError) return r;
+    // 11.10: frame-to-frame metrics in Node (pure-JS PNG decode) — the
+    // "changed / unchanged, and where" answer an agent needs after an edit.
+    try {
+      const a = decodePng(await readFileSettled(path.resolve(args.compareWith)));
+      const b = decodePng(await readFileSettled(path.resolve(args.outPath)));
+      const cmp = compareFrames(a, b);
+      const sc = r.structuredContent as Record<string, unknown> | undefined;
+      if (sc) sc.compare = { against: path.resolve(args.compareWith), ...cmp };
+      const text = r.content.find((c) => c.type === "text");
+      if (text && "text" in text) text.text = JSON.stringify(sc ?? { compare: cmp }, null, 2);
+      return r;
+    } catch (err) {
+      const sc = r.structuredContent as Record<string, unknown> | undefined;
+      if (sc)
+        sc.compare = {
+          error: `compare failed: ${err instanceof Error ? err.message : String(err)}`,
+        };
+      return r;
+    }
+  },
+});
+
+/** Pixel metrics between two decoded frames of the same size. */
+export function compareFrames(
+  a: { width: number; height: number; rgb: Float64Array },
+  b: { width: number; height: number; rgb: Float64Array },
+  threshold = 0.04,
+): {
+  changedRatio: number;
+  meanAbsDiff: number;
+  maxAbsDiff: number;
+  bbox: { x: number; y: number; w: number; h: number } | null;
+  sameSize: boolean;
+} {
+  if (a.width !== b.width || a.height !== b.height)
+    return { changedRatio: 1, meanAbsDiff: 1, maxAbsDiff: 1, bbox: null, sameSize: false };
+  const n = a.width * a.height;
+  let changed = 0,
+    sum = 0,
+    max = 0,
+    x0 = a.width,
+    y0 = a.height,
+    x1 = -1,
+    y1 = -1;
+  for (let i = 0; i < n; i++) {
+    const d = Math.max(
+      Math.abs(a.rgb[i * 3] - b.rgb[i * 3]),
+      Math.abs(a.rgb[i * 3 + 1] - b.rgb[i * 3 + 1]),
+      Math.abs(a.rgb[i * 3 + 2] - b.rgb[i * 3 + 2]),
+    );
+    sum += d;
+    if (d > max) max = d;
+    if (d > threshold) {
+      changed++;
+      const x = i % a.width,
+        y = (i - x) / a.width;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  return {
+    changedRatio: Number((changed / n).toFixed(4)),
+    meanAbsDiff: Number((sum / n).toFixed(4)),
+    maxAbsDiff: Number(max.toFixed(4)),
+    bbox: x1 >= 0 ? { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 } : null,
+    sameSize: true,
+  };
+}
+
+async function renderOnce(args: RenderArgs, transport: AeTransport): Promise<ToolResult> {
+  {
     const rejection = rejectedOutputPath(args.outPath);
     if (rejection !== null) {
       return errorResult("IO", rejection, {
@@ -83,8 +165,17 @@ export const renderFrameTool = defineTool({
     }
     const abs = path.resolve(args.outPath).replace(/\\/g, "/");
     return nativeFlow(args, abs, transport);
-  },
-});
+  }
+}
+
+type RenderArgs = {
+  compNameOrId: string | number;
+  time: number;
+  outPath: string;
+  useDisplayStartTime?: boolean;
+  colorManaged?: "auto" | "off";
+  compareWith?: string;
+};
 
 async function nativeFlow(
   args: {

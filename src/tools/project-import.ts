@@ -5,6 +5,7 @@ import { z } from "zod";
 import { errorResult } from "../errors.js";
 import { validateAeProjectDoc } from "../validate.js";
 import { defineTool, jsonResult, toMcpResult } from "./define-tool.js";
+import { projectLockCheckJsx } from "../policy.js";
 
 export const projectImportTool = defineTool({
   name: "ae_project_import_json",
@@ -103,6 +104,7 @@ export const projectImportTool = defineTool({
     // making every character in every layer name an escaping hazard. As a
     // payload it is parsed once, by JSON.parse, before our code ever runs.
     const code = `
+        ${projectLockCheckJsx()}
         return AE.importProject(payload.doc, payload.opts);
     `;
     const result = await transport.execute({

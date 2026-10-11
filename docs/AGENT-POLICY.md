@@ -13,12 +13,15 @@ What must be gated is what the undo stack does not cover:
 | Operation(s)                                                                                      | Why                                                                                                                 |
 | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `eval.run`                                                                                        | arbitrary ExtendScript = file system and network access beyond After Effects (also keep `AE_MCP_ENABLE_EVAL` unset) |
-| `project.new`, `project.open`                                                                     | drop unsaved work; not undoable                                                                                     |
+| `project.new`, `project.open`, `project.revert`                                                   | drop unsaved work; not undoable (revert keeps a `…-before-revert` checkpoint, but still replaces the open project)  |
 | `project.reduce`, `project.purge`, `project.remove_unused_footage`, `project.consolidate_footage` | outside the undo stack                                                                                              |
 | `pref.*`, `render.save_template`, `font.set_favorites`, `font.set_substitution`                   | change the application, not the project                                                                             |
 | `render.start`, `render.queue_in_ame`                                                             | write files to disk and occupy After Effects for minutes                                                            |
 
-Everything else — allow.
+Everything else — allow. Two switches make the rest safer without a gate: `AE_MCP_PROJECT_LOCK`
+(writes only in the one designated .aep) and `batch.run { atomic: true }` (a failed batch undoes
+itself); `project.checkpoint` before a long change gives the human a way back that outlives the
+undo stack.
 
 ## Gate by operation name, not by tool name
 
@@ -34,6 +37,7 @@ const DENY = new Set([
   "eval.run",
   "project.new",
   "project.open",
+  "project.revert",
   "project.reduce",
   "project.purge",
   "project.remove_unused_footage",

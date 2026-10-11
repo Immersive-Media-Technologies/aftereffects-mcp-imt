@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { errorResult } from "../errors.js";
 import { summarizeParams, suggestName, validateOpArgs } from "../opschema.js";
-import { denyOperation, denyUnregisteredOperation } from "../policy.js";
+import { denyOperation, denyUnregisteredOperation, projectLockGuardJsx } from "../policy.js";
 import {
   AMBIENT_CONTEXT_JSX,
   denyAppConfig,
@@ -131,7 +131,8 @@ export const doTool = defineTool({
     }
 
     // Generate JSX from the operation's toJsx, then append ambient context gathering.
-    const userJsx = op.toJsx(validated.value);
+    // 11.10: AE_MCP_PROJECT_LOCK — a mutation on any project but the designated one is refused inside AE before it runs.
+    const userJsx = projectLockGuardJsx(op, validated.value) + op.toJsx(validated.value);
     const wrappedCode = `
         var _opResult = (function() {
             ${userJsx}

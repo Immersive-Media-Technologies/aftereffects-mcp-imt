@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { projectLockPath } from "../policy.js";
 import { jsxVal } from "../registry.js";
 import { defineTool, toMcpResult } from "./define-tool.js";
 
@@ -21,6 +22,23 @@ export const saveProjectTool = defineTool({
       ),
   },
   handler: async (args, transport) => {
+    // 11.10: under AE_MCP_PROJECT_LOCK a Save As to another path would move the
+    // project out of the lock — refused before AE is contacted.
+    const lock = projectLockPath();
+    if (lock && args.path && args.path.replace(/\\/g, "/") !== lock) {
+      return toMcpResult({
+        ok: false,
+        result: {
+          ok: false,
+          error: `project lock: Save As to ${args.path} is refused — writes stay in ${lock} (AE_MCP_PROJECT_LOCK)`,
+        },
+        error: null,
+        errorCode: null,
+        stack: null,
+        logs: [],
+        durationMs: 0,
+      });
+    }
     const code = `
         var _path = ${jsxVal(args.path ?? null)};
         if (_path) {

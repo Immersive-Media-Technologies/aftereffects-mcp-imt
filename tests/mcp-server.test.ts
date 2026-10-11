@@ -10,6 +10,7 @@ const EXPECTED_TOOLS = [
   "ae_catalog",
   "ae_comp_info",
   "ae_context",
+  "ae_dialogs",
   "ae_do",
   "ae_layer_info",
   "ae_project_export_json",
@@ -31,7 +32,7 @@ describe("mcp server over stdio (offline)", () => {
     await client.close();
   });
 
-  it("tools/list returns exactly the 11 ae_* tools", async () => {
+  it("tools/list returns exactly the 12 ae_* tools", async () => {
     const res = await client.listTools();
     const names = res.tools.map((t) => t.name).toSorted();
     expect(names).toEqual(EXPECTED_TOOLS.toSorted());

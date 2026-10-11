@@ -26,6 +26,7 @@ import {
 } from "../config.js";
 import type { AeErrorCode } from "../errors.js";
 import type { AeTransport, EvalRequest, EvalResult } from "./AeTransport.js";
+import { dialogBlockMessage, dialogHint, scanAeDialogs } from "./dialogs.js";
 import { buildLaunchPlan } from "./launcher.js";
 
 interface SpawnState {
@@ -250,6 +251,16 @@ export class FileIpcTransport implements AeTransport {
       // dispatcher already consumed it this unlink is a no-op.
       const reclaimed = await this.safeUnlink(requestPath);
       leaveLockForRunningScript = !reclaimed;
+      // 11.10 (upstream 0.3.1 port): a modal dialog is the usual reason a
+      // script never ran — say so, with the dialog's text, instead of a bare
+      // TIMEOUT. Best-effort and ~0.1–0.6 s, only on this failure path.
+      const dialogs = await scanAeDialogs();
+      if (dialogs.length > 0) {
+        return failure("DIALOG_OPEN", dialogBlockMessage(dialogs), {
+          durationMs: Date.now() - started,
+          hint: dialogHint(dialogs),
+        });
+      }
       return failure(
         "TIMEOUT",
         `timeout after ${timeoutMs}ms waiting for After Effects to respond` +

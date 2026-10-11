@@ -40,7 +40,10 @@ describe("property.sample", () => {
     const withTimes = getOp("property.sample")!.toJsx({
       comp: "Main",
       layer: "3D Tracker Camera",
-      properties: [["Transform", "Position"], ["Camera Options", "Zoom"]],
+      properties: [
+        ["Transform", "Position"],
+        ["Camera Options", "Zoom"],
+      ],
       times: [0, 4.67, 9.3],
     });
     expect(withTimes).toContain("[0,4.67,9.3]");

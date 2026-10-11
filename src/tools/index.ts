@@ -15,6 +15,7 @@ import { projectInfoTool } from "./project-info.js";
 import { renderFrameTool } from "./render-frame.js";
 import { saveProjectTool } from "./save-project.js";
 import { versionInfoTool } from "./version-info.js";
+import { dialogsTool } from "./dialogs.js";
 
 export type AnyTool = {
   name: string;
@@ -40,4 +41,5 @@ export const ALL_TOOLS: AnyTool[] = [
   catalogTool,
   doTool,
   contextTool,
+  dialogsTool,
 ];

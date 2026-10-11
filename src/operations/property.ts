@@ -132,8 +132,7 @@ registerOp({
     {
       name: "times",
       type: "array",
-      description:
-        "Times in seconds. Omit for [0, duration/2, duration - one frame] of the comp.",
+      description: "Times in seconds. Omit for [0, duration/2, duration - one frame] of the comp.",
       required: false,
     },
   ],

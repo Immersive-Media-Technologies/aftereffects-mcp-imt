@@ -17,7 +17,7 @@
 // `ae_do` / `batch.run` (the operation is refused even if the model guessed
 // its name).
 
-import type { Operation } from "./registry.js";
+import { getOp, jsxVal, type Operation } from "./registry.js";
 import { envFlag } from "./env-flag.js";
 
 /**
@@ -106,11 +106,69 @@ export function denyTool(name: string, blockedInReadOnly: boolean): Denial | nul
 }
 
 /** One-line description of the active policy, for the startup banner. */
+// ── Project lock (11.10) ──────────────────────────────────────────────────
+//
+//   AE_MCP_PROJECT_LOCK=/path/to/project.aep — writes are allowed only while
+//   THAT project is the open one. The idea (solomondivyananth's sandbox guard,
+//   yumehiko's --expect-project) is the hand-over case: a person designates
+//   the one file an agent may change; a different project open in the same AE
+//   — the user's own work — is untouchable even by a confused agent. Reads
+//   stay free. project.open may open the locked file itself; project.new is
+//   refused (it would close the locked project).
+
+export function projectLockPath(): string | null {
+  const raw = process.env.AE_MCP_PROJECT_LOCK?.trim();
+  return raw ? raw.replace(/\\/g, "/") : null;
+}
+
+function opMutates(op: Operation, args: Record<string, unknown>): boolean {
+  if (op.name === "batch.run") {
+    const ops = Array.isArray(args.ops) ? (args.ops as Array<{ operation?: unknown }>) : [];
+    return ops.some((o) => {
+      const child = typeof o?.operation === "string" ? getOp(o.operation) : undefined;
+      return child ? child.readOnly !== true : false;
+    });
+  }
+  return op.readOnly !== true;
+}
+
+/**
+ * ExtendScript prefix that enforces the project lock for this call, or "" when
+ * no lock is set or the call cannot change the project. Prepended by ae_do;
+ * ae_save_project and ae_project_import_json apply the same rule by hand.
+ */
+export function projectLockGuardJsx(op: Operation, args: Record<string, unknown>): string {
+  const lock = projectLockPath();
+  if (!lock || !opMutates(op, args)) return "";
+  if (op.name === "project.open") {
+    const target = typeof args.path === "string" ? args.path.replace(/\\/g, "/") : "";
+    return target === lock
+      ? ""
+      : `return { ok: false, error: "project lock: only " + ${jsxVal(lock)} + " may be opened for writing (AE_MCP_PROJECT_LOCK); asked for " + ${jsxVal(target)} };\n`;
+  }
+  if (op.name === "project.new") {
+    return `return { ok: false, error: "project lock: project.new would close the locked project " + ${jsxVal(lock)} + " (AE_MCP_PROJECT_LOCK)" };\n`;
+  }
+  return projectLockCheckJsx();
+}
+
+/** The runtime check itself: the open project must be the locked file. */
+export function projectLockCheckJsx(): string {
+  const lock = projectLockPath();
+  if (!lock) return "";
+  return `
+        var _lockCur = app.project.file ? app.project.file.fsName.replace(/\\\\/g, "/") : null;
+        if (_lockCur !== ${jsxVal(lock)}) return { ok: false, error: "project lock: writes are allowed only in " + ${jsxVal(lock)} + " (AE_MCP_PROJECT_LOCK), but the open project is " + (_lockCur || "untitled / none") + " — open the locked project (project.open) or ask the user to lift the lock" };
+    `;
+}
+
 export function policySummary(): string {
   const parts: string[] = [];
   parts.push(readOnlyMode() ? "readonly=ON (no project mutations)" : "readonly=off");
   const allowed = allowedCategories();
   parts.push(allowed ? `categories=${Array.from(allowed).sort().join("|")}` : "categories=all");
   parts.push(evalRunEnabled() ? "eval.run=ENABLED" : "eval.run=disabled");
+  const lock = projectLockPath();
+  if (lock) parts.push(`project-lock=${lock}`);
   return parts.join(", ");
 }
