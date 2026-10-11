@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Verified
+
+- **Windows 11 (ARM, Parallels) · Claude Desktop from the Microsoft Store (2.31226, arm64) · After
+  Effects 2026 (26.5)** with the 0.5.5 `.mcpb`: the extension runs on Claude's built-in Node (no
+  Node.js installed in the VM), `tools/list` returns the 12 tools, `tools/call` answers in 1–3 s and
+  the dispatcher runs inside AE through `AfterFX.exe -r` (`%TEMP%\mcp-aftereffects\runtime\dispatcher_start.txt`
+  shows `version:26.5x89`). The extension lives under
+  `%LOCALAPPDATA%\Packages\Claude_<id>\LocalCache\Roaming\Claude\Claude Extensions\…` and logs to
+  `%LOCALAPPDATA%\Claude\logs\mcp-server-<name>.log`.
+- **macOS · Claude Desktop** with the 0.5.5 `.mcpb` (`ae_dialogs`, `project.list_checkpoints` called
+  through the extension).
+
 ## [0.5.5] - 2026-10-11
 
 Safety and verification for an agent that works on its own, plus the After Effects skill —

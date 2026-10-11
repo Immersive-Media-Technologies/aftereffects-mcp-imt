@@ -18,8 +18,9 @@ Two parts, made to work together:
 By **[Immersive Media Technologies](https://github.com/Immersive-Media-Technologies)** — the After
 Effects layer of our Deep Artisan agent system, released for other agent builders.
 
-**macOS and Windows · After Effects 2024–2026 (26.5 verified, English and Russian UI) · Node.js 22+
-(none needed with the Claude Desktop extension).**
+**macOS and Windows · After Effects 2024–2026 (26.5 verified on both, English and Russian UI) ·
+Node.js 22+ (none needed with the Claude Desktop extension — verified on macOS and on the Windows
+Store build of Claude Desktop).**
 
 > [!CAUTION]
 > This edits real After Effects projects and sends project contents (names, expressions, footage
@@ -91,7 +92,9 @@ Cursor's and Antigravity's configs, backing them up.
   permission for the client app.
 - Windows: `AE_MCP_EXE` must point to `AfterFX.exe` when After Effects is not under
   `C:\Program Files\Adobe`. No supported GPU (a VM): dismiss the «System Compatibility Report»
-  first.
+  first. The `.mcpb` needs no Node.js on the machine — Claude Desktop runs it on its built-in
+  Node (verified with the Microsoft Store build on Windows 11 ARM). Server log:
+  `%LOCALAPPDATA%\Claude\logs\mcp-server-<name>.log`; mailbox: `%TEMP%\mcp-aftereffects`.
 - If your client caps tool output, raise it to 50 000 — `ae_project_info` on a real project is
 bigger than the usual 25 000.
 </details>
