@@ -11,7 +11,7 @@ with a short name (`entrance.png`, `t8.5.png`). 16-bit projects give ~10 MB PNGs
 batch.run:
   comp.set_work_area  {comp, start:5, end:9.3}
   render.add_to_queue {comp}                                   # output folder is created
-  render.set_output   {queueItem:1, outPath:"<aep folder>/DA_render/<comp>/<name>.mp4"}
+  render.set_output   {queueItem:1, outPath:"<aep folder>/renders/<comp>/<name>.mp4"}
   render.start        {}
 ```
 

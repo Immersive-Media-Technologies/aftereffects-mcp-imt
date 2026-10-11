@@ -5,7 +5,7 @@
 #                                   dialog is open, re-checking after each press
 #   ae-dialogs.sh escape          → one Escape (an open context/app menu blocks DoScript
 #                                   with AppleEvent timeout -1712 until Escape)
-#   ae-dialogs.sh front           → bring AE to the front
+#   ae-dialogs.sh front           → bring AE to the front (also out of the Stage Manager strip)
 #   ae-dialogs.sh menus <menu>    → localized item names of one menu bar menu
 # Exit code 1 of osascript with «-1719» = the AE process does not exist (crashed).
 set -uo pipefail
@@ -17,7 +17,13 @@ case "${1:-list}" in
             [ "$d" = "0" ] && { echo "no dialog ($((i-1)) closed)"; exit 0; }
             osascript -e "$P to key code 36"; sleep 1; done; echo "pressed Return $n times" ;;
   escape) osascript -e "$P to key code 53" ;;
-  front)  osascript -e 'tell application "System Events" to set frontmost of process "After Effects" to true' ;;
+  front)  # `open -b` activates AE without Accessibility and pulls it out of the Stage Manager
+          # strip — but it would also LAUNCH a closed AE (live 11.10: a fresh untitled project),
+          # so only when the process exists; System Events is the fallback
+          pgrep -qx "After Effects" || { echo "After Effects is not running" >&2; exit 1; }
+          open -b com.adobe.AfterEffects.application 2>/dev/null \
+            || osascript -e 'tell application "System Events" to set frontmost of process "After Effects" to true'
+          sleep 1 ;;
   menus)  osascript -e 'with timeout of 20 seconds' -e "$P to get name of every menu item of menu \"$2\" of menu bar item \"$2\" of menu bar 1" -e 'end timeout' ;;
   *) echo "usage: ae-dialogs.sh list|close [N]|escape|front|menus <menu>" >&2; exit 2 ;;
 esac
