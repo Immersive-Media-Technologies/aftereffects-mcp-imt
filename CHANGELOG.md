@@ -44,6 +44,14 @@ drawn from a survey of the AE-agent landscape (October 2026) and rewritten for t
   `layer.stagger` (Quick Offset for a set of layers, seconds or frames, start or in-point),
   `layer.fit_to_comp` (fit / fill / width / height / stretch), `layer.align` (comp, action-safe,
   title-safe or first-layer reference, by rendered bounds), `comp.trim_to_content`.
+- **The After Effects skill — `skills/ae/`** (replaces `skills/ae-motion`, which is now
+  `skills/ae/recipes/motion-graphics.md`): a short router (`SKILL.md`: call budget, order of work,
+  what a script cannot do in AE and the safe workaround), recipes (camera tracking, 3D content on
+  tracked footage, plug-in tests, render, motion graphics, masks/roto, Mocha), plug-in knowledge
+  files (`plugins/irrealix-gaussian-splatting.md` first) and scripts for the UI-only steps
+  (hardware-level mouse events, windows, menus, dialogs, one-call waits, screenshots, frame strips,
+  a slide measurement). Ships in the `.mcpb` and the npm package; `fetch-vendor.sh` pulls the MIT
+  topic references the motion recipe routes to.
 - `property.sample` — several properties of one layer at several times in one call (the
   motion-verification atom: a tracked camera's Position / Orientation / Zoom at start / middle / end,
   an effect parameter across a shot). Times default to `[0, duration/2, end]`.

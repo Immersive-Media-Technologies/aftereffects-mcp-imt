@@ -13,7 +13,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -41,6 +41,11 @@ for (const d of ["jsx", "fixtures"])
   cpSync(join(ROOT, d), join(SERVER_DIR, d), { recursive: true });
 for (const f of ["LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "README.md"])
   copyFileSync(join(ROOT, f), join(STAGING, f));
+// The After Effects skill ships with the bundle (without the fetched vendor references).
+cpSync(join(ROOT, "skills", "ae"), join(STAGING, "skills", "ae"), {
+  recursive: true,
+  filter: (src) => !src.includes(`${sep}vendor`),
+});
 
 writeFileSync(
   join(SERVER_DIR, "package.json"),

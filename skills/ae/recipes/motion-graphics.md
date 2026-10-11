@@ -1,17 +1,15 @@
----
-name: ae-motion
-description: Native, editable motion graphics built inside After Effects through the AE-MCP-IMT server (ae_catalog / ae_do) — from a reference image and a motion brief to an AE project whose titles, colours, timing and elements the user edits in AE (layers, shape layers, text animators, keyframes with real easing, expressions, a controls rig, Essential Graphics / MOGRT). Use when the user asks for motion graphics, titles, lower thirds, kinetic type, logo stings, infographics, transitions or overlays in AE.
----
+# Motion graphics — editable comps in After Effects (recipe of the `ae` skill)
 
-# AE Motion — editable motion graphics in After Effects
+Read when the user asks for motion graphics, titles, lower thirds, kinetic type, logo stings,
+infographics, transitions or overlays in AE. Was the `ae-motion` skill (rev 1); folded into this skill on 11.10.2026 (rev 2: layer order and per-phase frame checks from a live run).
 
 The deliverable is **an After Effects composition the user can edit**, not a rendered clip: native text
 layers, shape layers, masks, keyframes, expressions and a controls rig. Rendered pixels (generated
-images, footage, a HyperFrames render) are _source material_ placed under or between native layers —
+images, footage, an external render) are _source material_ placed under or between native layers —
 never a substitute for something AE can build natively. If the user wants a finished clip without AE
 editability, an HTML/video renderer is the better tool, not this skill.
 
-Paths below are relative to this file's folder.
+Vendored references live in `../vendor/` (paths below are relative to this file).
 
 ## 1. Brief → breakdown (before touching AE)
 
@@ -61,6 +59,8 @@ Work in this order; each step is one `batch.run` where possible (one undo group)
 3. **Elements**: `layer.create_text` + `text.set_style` (+ `text.add_animator`, `text.add_font_axis`
    for variable fonts — AE 26.2), `layer.create_shape` + `shape.add_*`, `mask.add`, imported footage via
    `layer.create_footage`. Parent with `layer.set_parent` **at rest, before keying**.
+   **Layer order as in the reference** (what is in front of what — the 09.10 run put the plate over the
+   letter I and did not notice): set it explicitly (`layer.move`) and check it on a frame.
 4. **Motion**: `keyframe.add` / `keyframe.set_batch` then **real easing** — `keyframe.set_easing`
    (influence/speed per side) and `keyframe.set_interpolation` (hold for held poses; linear for pass-through
    waypoints). Never leave default linear keys on UI/type motion. Procedural motion (wiggle, loops,
@@ -70,14 +70,16 @@ Work in this order; each step is one `batch.run` where possible (one undo group)
 6. **Save**: `ae_save_project` (a new version name before restructuring an existing project).
 
 `eval.run` (raw ExtendScript) only when no operation covers it — read
-`vendor/ae2026/after-effects/references/extendscript-gotchas.md` before writing one (ES3, ease array
+`../vendor/ae2026/after-effects/references/extendscript-gotchas.md` before writing one (ES3, ease array
 sizes per property, text document quirks).
 
 ## 4. Verify, then report
 
 - Read back what matters (`ae_layer_info`, `ae_comp_info`) — property values are the truth.
-- `ae_render_frame` at entrance / mid / hold / exit (a handful, not a scrub) into a scratch folder;
-  look at them and fix spacing, overlaps, readability, safe areas, easing that reads mechanical.
+- `ae_render_frame` at entrance / mid / hold / exit (a handful, not a scrub) into the chat frames folder;
+  glue them with `../scripts/frame-strip.py` and look at them once; fix spacing, overlaps, readability,
+  safe areas, easing that reads mechanical. **Every phase gets a frame** — a phase reported as
+  "unverified" (the 09.10 "breathing" phase) is not done.
 - Reply briefly: comp name, what is native vs source material, the CONTROLS (what each slider does),
   the Essential Graphics properties, and the check frames by name.
 
@@ -88,24 +90,21 @@ controls/properties rather than rebuilding. Read the current state first: the us
 
 ## Knowledge — read on demand (paths relative to this folder)
 
-| topic                                                                                                         | read                                                                                                                                                                  |
-| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| keyframes, easing, rigging rules (parent at rest, hold keys, waypoints), expressions                          | `vendor/ae2026/after-effects/references/animation.md`                                                                                                                 |
-| shape layers (Contents tree, trim paths, repeaters)                                                           | `vendor/ae2026/after-effects/references/shapes.md`, `vendor/motion-design/aftereffects-motion/references/shape-layers.md`                                             |
-| text layers, animators, per-letter editable typography                                                        | `vendor/ae2026/after-effects/references/text.md`, `vendor/motion-design/aftereffects-motion/references/text-animators.md`, `vendor/ae-agent/references/typography.md` |
-| assembling shots, markers, retiming                                                                           | `vendor/ae2026/after-effects/references/assembly.md`                                                                                                                  |
-| MOGRT, importing footage                                                                                      | `vendor/ae2026/after-effects/references/mogrt-and-footage.md`, `vendor/ae-agent/references/delivery.md`                                                               |
-| compositing recipes (glows, textured titles, light sweeps)                                                    | `vendor/ae-agent/references/recipes.md`, `vendor/motion-design/aftereffects-motion/references/effects-catalog.md`                                                     |
-| expression library (overshoot, loopOut, valueAtTime stagger, wiggle)                                          | `vendor/motion-design/aftereffects-motion/references/expressions.md`, `vendor/motion-fundamentals/after-effects/references/expression-library.md`                     |
-| AE 2026 changes (variable fonts, SVG import, 3D, expressions)                                                 | `vendor/ae2026/after-effects/references/whats-new.md`                                                                                                                 |
-| ExtendScript pitfalls                                                                                         | `vendor/ae2026/after-effects/references/extendscript-gotchas.md`, `vendor/motion-design/aftereffects-motion/references/limits-and-pitfalls.md`                        |
-| motion principles, timing & spacing, easing taxonomy, defaults to avoid                                       | `vendor/motion-design/motion-design/references/*.md`, `vendor/motion-fundamentals/animation-principles/`                                                              |
-| colour in motion, shot composition, logo reveals, motion backgrounds, art direction                           | `vendor/motion-fundamentals/{color-motion,shot-composition,logo-animation,motion-background,motion-art-direction}/SKILL.md`                                           |
-| choreography rules, text-effect catalogue (engine-agnostic ideas; translate GSAP eases to AE influence/speed) | `vendor/hyperframes-animation/SKILL.md`                                                                                                                               |
-| critique your result                                                                                          | `vendor/motion-design/motion-design-critique/SKILL.md`                                                                                                                |
-
-`vendor/` is not in the repository: run `./fetch-vendor.sh` once (downloads the pinned skill repositories
-from GitHub; nothing is uploaded). Without it the skill still works — only the deep references are missing.
+| topic                                                                                                         | read                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| keyframes, easing, rigging rules (parent at rest, hold keys, waypoints), expressions                          | `../vendor/ae2026/after-effects/references/animation.md`                                                                                                                       |
+| shape layers (Contents tree, trim paths, repeaters)                                                           | `../vendor/ae2026/after-effects/references/shapes.md`, `../vendor/motion-design/aftereffects-motion/references/shape-layers.md`                                                |
+| text layers, animators, per-letter editable typography                                                        | `../vendor/ae2026/after-effects/references/text.md`, `../vendor/motion-design/aftereffects-motion/references/text-animators.md`, `../vendor/ae-agent/references/typography.md` |
+| assembling shots, markers, retiming                                                                           | `../vendor/ae2026/after-effects/references/assembly.md`                                                                                                                        |
+| MOGRT, importing footage                                                                                      | `../vendor/ae2026/after-effects/references/mogrt-and-footage.md`, `../vendor/ae-agent/references/delivery.md`                                                                  |
+| compositing recipes (glows, textured titles, light sweeps)                                                    | `../vendor/ae-agent/references/recipes.md`, `../vendor/motion-design/aftereffects-motion/references/effects-catalog.md`                                                        |
+| expression library (overshoot, loopOut, valueAtTime stagger, wiggle)                                          | `../vendor/motion-design/aftereffects-motion/references/expressions.md`, `../vendor/motion-fundamentals/after-effects/references/expression-library.md`                        |
+| AE 2026 changes (variable fonts, SVG import, 3D, expressions)                                                 | `../vendor/ae2026/after-effects/references/whats-new.md`                                                                                                                       |
+| ExtendScript pitfalls                                                                                         | `../vendor/ae2026/after-effects/references/extendscript-gotchas.md`, `../vendor/motion-design/aftereffects-motion/references/limits-and-pitfalls.md`                           |
+| motion principles, timing & spacing, easing taxonomy, defaults to avoid                                       | `../vendor/motion-design/motion-design/references/*.md`, `../vendor/motion-fundamentals/animation-principles/`                                                                 |
+| colour in motion, shot composition, logo reveals, motion backgrounds, art direction                           | `../vendor/motion-fundamentals/{color-motion,shot-composition,logo-animation,motion-background,motion-art-direction}/SKILL.md`                                                 |
+| choreography rules, text-effect catalogue (engine-agnostic ideas; translate GSAP eases to AE influence/speed) | `../vendor/hyperframes-animation/SKILL.md`                                                                                                                                     |
+| critique your result                                                                                          | `../vendor/motion-design/motion-design-critique/SKILL.md`                                                                                                                      |
 
 The vendor skills were written for **other** AE bridges: their tool names (`add_keyframe`,
 `set_temporal_ease`, `run_jsx`, `screenshot_frame`, `get_layer_full`, …) do **not** exist here. Map them:
@@ -122,6 +121,5 @@ The vendor skills were written for **other** AE bridges: their tool names (`add_
 | get_house_style                                       | none — ask the user for brand colours/fonts once, or take them from the reference                 |
 
 Their setup, licensing, Higgsfield/ChatGPT bridges, computer-use instructions and file-menu script runs
-do not apply. Third-party skills — Engine-Room-Games/after-effects-mcp, fuuuuuuma/after-effects-agent,
-LobzyJay/motion-design-with-claude, iart-ai/motion-design-skills (MIT) and heygen-com/hyperframes
-`hyperframes-animation` (Apache-2.0) — are fetched, not redistributed; see `vendor/*/LICENSE`, `vendor/*/.source`.
+do not apply. Third-party skills (MIT): Engine-Room-Games/after-effects-mcp, fuuuuuuma/after-effects-agent,
+LobzyJay/motion-design-with-claude, iart-ai/motion-design-skills — see `../vendor/*/LICENSE`, `../vendor/*/.source`.

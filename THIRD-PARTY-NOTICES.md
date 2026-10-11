@@ -54,10 +54,10 @@ SOFTWARE.
 
 ---
 
-## Skills fetched by `skills/ae-motion/fetch-vendor.sh` (not redistributed)
+## Skills fetched by `skills/ae/fetch-vendor.sh` (not redistributed)
 
-The AE Motion skill routes to topic references from the following repositories. They are **not part of
-this repository**: the script downloads them at pinned commits into `skills/ae-motion/vendor/`
+The After Effects skill (`skills/ae/recipes/motion-graphics.md`) routes to topic references from the following repositories. They are **not part of
+this repository**: the script downloads them at pinned commits into `skills/ae/vendor/`
 (git-ignored), each with its own `LICENSE` and a `.source` file.
 
 | Repository                                                                                                  | Commit  | Licence    |

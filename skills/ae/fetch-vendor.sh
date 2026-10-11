@@ -1,11 +1,11 @@
 #!/bin/bash
-# AE Motion — fetch the topic references this skill routes to (pinned commits) into ./vendor/.
+# AE skill — fetch the topic references recipes/motion-graphics.md routes to (pinned commits) into ./vendor/.
 # Download only (git clone over HTTPS from GitHub); nothing is uploaded. Re-run to refresh.
 # Third-party content keeps its own license: see vendor/<name>/LICENSE and vendor/<name>/.source.
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p vendor
-TMP="$(mktemp -d "${TMPDIR:-/tmp}/ae-motion-XXXX")"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/ae-skill-XXXX")"
 trap 'rm -rf "$TMP"' EXIT
 get() { # repo commit subdir dest
   git clone -q --filter=blob:none --no-checkout "https://github.com/$1.git" "$TMP/$4"

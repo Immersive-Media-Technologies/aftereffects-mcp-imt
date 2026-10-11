@@ -2,10 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
   "manifest_version": "0.4",
   "name": "aftereffects-mcp-imt",
-  "display_name": "AE-MCP-IMT — After Effects for AI agents",
+  "display_name": "AE-MCP-IMT + SKILLS — After Effects for AI agents",
   "version": "0.0.0",
   "description": "Drive a running Adobe After Effects from Claude: comps, layers, effects, keyframes, text, masks, expressions, render frames.",
-  "long_description": "AE-MCP-IMT by Immersive Media Technologies. 199 undo-grouped After Effects operations behind two tools, a real dry run, effect presets that work on localized AE, honest errors, no telemetry; ships the AE Motion skill for editable motion graphics. Requires Adobe After Effects 2024+ running on this computer. Non-commercial license; unofficial, not affiliated with Adobe Inc.",
+  "long_description": "AE-MCP-IMT by Immersive Media Technologies. ~270 undo-grouped After Effects operations behind two tools, a real dry run, checkpoints with revert, atomic batches, a project lock, dialog detection, honest errors, no telemetry; ships the After Effects skill (camera tracking, 3D content on footage, plug-in tests, render, editable motion graphics, plug-in knowledge files). Requires Adobe After Effects 2024+ running on this computer. Non-commercial license; unofficial, not affiliated with Adobe Inc.",
   "author": {
     "name": "Immersive Media Technologies",
     "url": "https://github.com/Immersive-Media-Technologies"

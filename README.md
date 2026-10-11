@@ -1,73 +1,60 @@
-<p align="center"><img src="assets/banner.jpg" alt="AE-MCP-IMT — After Effects for AI agents" width="1280"></p>
+<p align="center"><img src="assets/banner.jpg" alt="AE-MCP-IMT + SKILLS — After Effects for AI agents" width="1280"></p>
 
-# AE-MCP-IMT — After Effects for AI agents, built to be safe to hand over
+# AE-MCP-IMT + SKILLS — After Effects for AI agents, built to be safe to hand over
 
-An MCP server that lets an AI agent (Claude Desktop, Cursor, ChatGPT or any
-MCP-compatible client) drive a running Adobe After Effects: inspect projects, edit comps, layers,
-effects, keyframes, text and masks, set expressions, render frames — from natural language.
+Let an AI assistant (Claude Desktop, Cursor, ChatGPT, Google Antigravity or any MCP client) work
+inside your running **Adobe After Effects**: read the project, build and edit comps, layers,
+effects, keyframes, text, masks and expressions, render check frames — from plain language.
 
-Built by **[Immersive Media Technologies](https://github.com/Immersive-Media-Technologies)** as the
-After Effects backbone of the Deep Artisan agent pipeline, and released so that other agent
-builders can use the same, battle-tested layer.
+Two parts, made to work together:
 
-**macOS and Windows · After Effects 2024–2026 · Node.js 22+ (or none with the Claude Desktop extension).** After Effects itself runs only on macOS and
-Windows, so Linux is not a target. macOS is what we run every day; the Windows transport (`AfterFX.exe -r`)
-is verified on Windows 11 with After Effects 2026 — reports from Windows users are still welcome.
+- **The MCP server** — ~270 small, safe operations behind two tools, with a dry run, one undo
+  group per call, checkpoints, a project lock and honest errors.
+- **The skill** (`skills/ae`) — what the agent should _know_: the order of work, what a script
+  cannot do in After Effects and how to get around it safely, step-by-step recipes (camera
+  tracking, 3D content on footage, plug-in tests, render, motion graphics, masks), and plug-in
+  knowledge files.
+
+By **[Immersive Media Technologies](https://github.com/Immersive-Media-Technologies)** — the After
+Effects layer of our Deep Artisan agent system, released for other agent builders.
+
+**macOS and Windows · After Effects 2024–2026 (26.5 verified, English and Russian UI) · Node.js 22+
+(none needed with the Claude Desktop extension).**
 
 > [!CAUTION]
-> This tool edits real After Effects projects and sends project contents (comp and layer names,
-> expressions, footage paths, rendered previews) to the AI service you use. Start with a copy of a
-> project, check your AI provider's data policy for NDA work, and keep `AE_MCP_ENABLE_EVAL` off.
-
-## Why this one
-
-There are several After Effects MCP servers. Most stop at "the AI can call ExtendScript". This
-one is designed around what an **autonomous agent** actually needs: a small, stable tool surface,
-a real dry run, undo-safe operations, honest errors and an installer that says what is wrong.
-
-|                              | **AE-MCP-IMT (this repo)**                                                                                                                                                                                                                                                                                                               | kumoproductions/mcp-aftereffects                                                                  | Dakkshin/after-effects-mcp                                            | directorhomaidm-ops/aftereffects-mcp                 |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------- |
-| Talks to AE via              | `osascript` per call — **nothing installed inside AE**                                                                                                                                                                                                                                                                                   | same (we are a fork)                                                                              | CEP panel polling every few seconds — must be installed and kept open | AppleScript `DoScript`, temp files                   |
-| Operations                   | **199 atomic ops** behind 2 tools (`ae_catalog` / `ae_do`) — ~2 K tokens of tool schema per turn instead of 199 tools                                                                                                                                                                                                                    | 198 ops, same facade                                                                              | 14 commands                                                           | 80+ tools (every op = a tool in the model's context) |
-| Dry run                      | **`ae_do {dryRun: true}` validates args and returns the generated ExtendScript without touching AE**                                                                                                                                                                                                                                     | `dryRun` existed only for JSON import; on `ae_do` it was silently dropped (the call ran for real) | —                                                                     | —                                                    |
-| Undo                         | every `ae_do` call = one undo group (Cmd+Z reverts an agent step)                                                                                                                                                                                                                                                                        | same                                                                                              | —                                                                     | —                                                    |
-| Effect presets               | 9 named templates (`glow`, `drop-shadow`, `cinematic-look`, `text-pop`, …) — **fixed**: two presets referenced effects that do not exist in AE (`ADBE Directional Blur`, `ADBE Glow`); properties addressed by index, so presets work on non-English AE (ru/ja) where by-name lookup returned `null` and silently applied factory values | —                                                                                                 | source of the presets (with those bugs)                               | —                                                    |
-| Render output                | output folder created for `render.add_to_queue` / `render.set_om_settings` (AE fails with "Directory does not exist" otherwise)                                                                                                                                                                                                          | added later upstream                                                                              | —                                                                     | —                                                    |
-| Install                      | **one click**: `.mcpb` for Claude Desktop (no Node needed), «Add to Cursor» button, `npx` for any other client; `./install.sh` / `install.ps1`: check AE and Node, build, **run a live self-test against AE**, write the client configs; failures are named (TCC −1743, scripting write access, Node path)                               | manual                                                                                            | clone, build, install panel, keep panel open                          | `uv run`                                             |
-| Permission policy for agents | reference deny-list in `docs/`: what to forbid is **what Cmd+Z cannot revert** (`eval.run`, `project.new/open`, purge/consolidate, `pref.*`, `render.start`) — everything else is safe to let the agent do                                                                                                                               | consent gate for app-config ops                                                                   | —                                                                     | —                                                    |
-| Motion-graphics agent skill  | **AE Motion** (`skills/ae-motion`): reference image + brief → element breakdown → a natively built, **editable** comp (text/shape layers, real easing, expressions, a CONTROLS rig, Essential Graphics / MOGRT), checked by rendered frames; topic references from five open skill sets fetched on demand                                | —                                                                                                 | —                                                                     | —                                                    |
-| Verified on                  | **AE 2026, macOS + Windows, Eng and Rus UI**                                                                                                                                                                                                                                                                                             | Windows + macOS                                                                                   | AE 2022+                                                              | AE 2026, macOS                                       |
-| License                      | **IMT Non-Commercial** for our work (attribution + link required, free for non-commercial use); upstream code stays MIT                                                                                                                                                                                                                  | MIT                                                                                               | MIT                                                                   | not specified                                        |
-
-Facts about other projects are from their READMEs on GitHub at the time of writing; corrections welcome.
+> This edits real After Effects projects and sends project contents (names, expressions, footage
+> paths, rendered previews) to the AI service you use. Work on a copy, check your provider's data
+> policy for NDA work, and keep `AE_MCP_ENABLE_EVAL` off unless you need raw scripting.
 
 ## What you can ask for
 
-- "Import this Illustrator file and animate the title with a text-pop preset."
-- "Point out anything broken in this AEP — missing footage, expressions with errors, unused comps."
-- "Apply the revisions from this PDF to the comps it names."
-- "Add a glow to every text layer in _Intro_, 30 % lighter than now."
-- "Render frame 120 of _Main_ so I can see the result."
-- "Here is a reference frame: build this lower third natively — title, subtitle, accent bar — with a Speed slider and the texts in Essential Graphics." (with the AE Motion skill)
+- "Point out anything broken in this project — missing footage, fonts, expression errors."
+- "Add a glow to every text layer in _Intro_, 30 % lighter than now, and show me frame 2.0."
+- "Import this Illustrator file and animate the title with the text-pop preset."
+- "Track the camera on this clip, put a 3D null on the floor and parent the logo to it." _(skill)_
+- "Here is a reference frame: build this lower third natively, with a Speed slider and the texts in
+  Essential Graphics." _(skill)_
+- "Test this plug-in on a solid, dump its parameters, render a frame and tell me if it works." _(skill)_
 
-The agent combines the 199 operations (11 MCP tools) itself, checking project state between steps.
+The agent combines the operations itself and checks the project between steps; the skill keeps it
+on the rails.
 
 ## Install
 
-Requirements: Adobe After Effects 2024–2026 running on this computer (2026 verified). Two permissions
-without which nothing works: **Automation** — macOS must let the client control After Effects (the
-first call raises the system dialog; a refusal is remembered and shows up as AppleScript error
-**−1743**, System Settings → Privacy & Security → Automation); and **scripting file access** — After
-Effects → Settings → Scripting & Expressions → _Allow Scripts to Write Files and Access Network_. Pick
-the route for your client:
+You need After Effects running on this computer and two permissions:
 
-| Client                                                                                                                                                            | Route                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | What you need                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="https://www.google.com/s2/favicons?domain=claude.ai&sz=32" width="16" height="16" alt=""> **Claude Desktop**                                            | download [`aftereffects-mcp-imt.mcpb`](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/latest/download/aftereffects-mcp-imt.mcpb), double-click it, click **Install** (Windows: if the file opens with an app picker instead, drag the `.mcpb` onto Settings → Extensions) — the settings dialog has the switches (read-only mode, `eval.run`)                                                                                                             | nothing else: Claude Desktop brings its own Node.js                                                                                                       |
-| <img src="https://www.google.com/s2/favicons?domain=cursor.com&sz=32" width="16" height="16" alt=""> **Cursor**                                                   | <a href="https://cursor.com/en/install-mcp?name=aftereffects&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBpbW1lcnNpdmUtbWVkaWEtdGVjaG5vbG9naWVzL2FmdGVyZWZmZWN0cy1tY3AtaW10Il0sImVudiI6eyJNQ1BfVElNRU9VVCI6IjEyMDAwMCJ9fQ=="><img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add to Cursor" height="36"></a> — one click, Cursor writes the config                                                                                                                 | Node.js 22+ (`npx` fetches the package)                                                                                                                   |
-| <img src="https://www.google.com/s2/favicons?domain=antigravity.google&sz=32" width="16" height="16" alt=""> **Google Antigravity**                               | Settings → Customizations → Installed MCP Servers → **View raw config** (or type `/mcp` in the prompt panel) and add the `aftereffects` entry from the snippet below to `~/.gemini/config/mcp_config.json`; `install.sh` / `install.ps1` write it for you                                                                                                                                                                                                                                | Node.js 22+                                                                                                                                               |
-| <img src="https://www.google.com/s2/favicons?domain=chatgpt.com&sz=32" width="16" height="16" alt=""> **ChatGPT** and other clients that take only remote servers | one command on the After Effects machine — `npx -p @immersive-media-technologies/aftereffects-mcp-imt aftereffects-mcp-imt-chatgpt` — starts the server behind a Streamable-HTTP gateway and a tunnel, and prints the public URL to paste into ChatGPT → Settings → Connectors → Create (developer mode, authentication: none). After Effects stays on your machine; the tunnel is your door — whoever knows the URL can drive it while this runs, so stop it (Ctrl+C) after the session | Node.js 22+ and a tunnel tool: `cloudflared` (no account; `brew install cloudflared` / `winget install Cloudflare.cloudflared`) or `ngrok` (free account) |
-| **Any MCP client** with a JSON config                                                                                                                             | the snippet below in its `mcpServers`                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Node.js 22+                                                                                                                                               |
+- **macOS — Automation:** the first call asks whether your AI client may control After Effects
+  (a refusal shows up later as error −1743: System Settings → Privacy & Security → Automation).
+- **Scripting file access:** After Effects → Settings → Scripting & Expressions → _Allow Scripts to
+  Write Files and Access Network_.
+
+| Client                                                                                                                                  | How                                                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="https://www.google.com/s2/favicons?domain=claude.ai&sz=32" width="16" height="16" alt=""> **Claude Desktop**                  | download [`aftereffects-mcp-imt.mcpb`](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/latest/download/aftereffects-mcp-imt.mcpb), double-click, **Install** (Windows: drag it onto Settings → Extensions). No Node needed.                                                                          |
+| <img src="https://www.google.com/s2/favicons?domain=cursor.com&sz=32" width="16" height="16" alt=""> **Cursor**                         | <a href="https://cursor.com/en/install-mcp?name=aftereffects&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBpbW1lcnNpdmUtbWVkaWEtdGVjaG5vbG9naWVzL2FmdGVyZWZmZWN0cy1tY3AtaW10Il0sImVudiI6eyJNQ1BfVElNRU9VVCI6IjEyMDAwMCJ9fQ=="><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add to Cursor" height="20"></a> |
+| <img src="https://www.google.com/s2/favicons?domain=antigravity.google&sz=32" width="16" height="16" alt=""> **Google Antigravity**     | Settings → Customizations → Installed MCP Servers → **View raw config** → add the snippet below.                                                                                                                                                                                                                                   |
+| <img src="https://www.google.com/s2/favicons?domain=chatgpt.com&sz=32" width="16" height="16" alt=""> **ChatGPT** (remote servers only) | on the After Effects machine: `npx -p @immersive-media-technologies/aftereffects-mcp-imt aftereffects-mcp-imt-chatgpt` — it starts the server behind a tunnel and prints the URL to paste into ChatGPT.                                                                                                                            |
+| **Any MCP client**                                                                                                                      | the snippet below in its `mcpServers`.                                                                                                                                                                                                                                                                                             |
 
 ```json
 {
@@ -81,148 +68,146 @@ the route for your client:
 }
 ```
 
-A GUI client on macOS does not see your shell `PATH`: if it reports `spawn npx ENOENT`, replace
-`npx` with the absolute path of a Node installed by Homebrew or the official installer (`nvm` Node is
-invisible to it) — exactly what the installer below writes. `MCP_TIMEOUT` of 120 s matters: a cold
-After Effects start plus the first `osascript` does not fit the default 30 s. If your client caps
-tool output, raise the cap to 50 000 — `ae_project_info` on a real
-project is larger than the 25 000 default.
-
-### macOS
-
-Verified daily (After Effects 2026). The dispatcher is sent through AppleScript (`osascript` →
-DoScript); the first call asks for the Automation permission (error −1743 means it was denied).
-From source, with a live self-test — the route we run ourselves:
+**From source, with a live self-test** (the route we use):
 
 ```bash
 git clone https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt.git
-cd aftereffects-mcp-imt && ./install.sh
+cd aftereffects-mcp-imt && ./install.sh        # Windows: .\install.ps1
 ```
 
-The script checks After Effects and Node (absolute path), builds, pings the running AE and names
-what is wrong (−1743, scripting file access, Node path), then — after asking — writes the entry
-into Claude Desktop's, Cursor's and Google Antigravity's config files, backing them up first.
-`--no-config` only prints the snippet; `--yes` skips the questions.
+The installer checks After Effects and Node, builds, pings the running AE, names what is wrong
+(−1743, scripting access, Node path) and — after asking — writes the entry into Claude Desktop's,
+Cursor's and Antigravity's configs, backing them up.
 
-### Windows
+<details>
+<summary>If something does not connect</summary>
 
-Verified on Windows 11 with After Effects 2026 (`install.ps1`, self-test, `ae_do`, `ae_comp_info`,
-`ae_render_frame`). The dispatcher is launched as `AfterFX.exe -r` through a short bootstrap under
-the temp folder — AfterFX.exe cuts the `-r` path at the first space, so the package path (Claude
-Desktop's `Claude Extensions`, any folder with a space) never reaches the command line. Set
-`AE_MCP_EXE` to your `AfterFX.exe` when After Effects is not under `C:\Program Files\Adobe`.
+- `spawn npx ENOENT` on macOS: GUI apps do not see your shell `PATH` — put the absolute path of a
+  Node from Homebrew or nodejs.org in place of `npx` (nvm's Node is invisible to them).
+- Set `MCP_TIMEOUT` to `120000`: a cold After Effects start does not fit the default 30 s.
+- A timeout with a **`DIALOG_OPEN`** message: After Effects is showing a dialog (save prompt,
+  missing footage, a plug-in warning) — the error quotes it; the agent can close it with
+  `ae_dialogs` or you click it away. On macOS reading and closing dialogs needs Accessibility
+  permission for the client app.
+- Windows: `AE_MCP_EXE` must point to `AfterFX.exe` when After Effects is not under
+  `C:\Program Files\Adobe`. No supported GPU (a VM): dismiss the «System Compatibility Report»
+  first.
+- If your client caps tool output, raise it to 50 000 — `ae_project_info` on a real project is
+bigger than the usual 25 000.
+</details>
 
-- **Claude Desktop:** the `.mcpb` has no file association on Windows — if a double-click shows an
-  app picker, drag the file onto Settings → Extensions instead.
-- **From source:** `.\install.ps1` (if scripts are blocked:
-  `powershell -ExecutionPolicy Bypass -File .\install.ps1`). Node.js 22+ from nodejs.org.
-- **Scripting access:** AE → Edit → Preferences → Scripting & Expressions → «Allow Scripts to
-  Write Files and Access Network» must be on.
-- **No supported GPU** (a VM, an old machine): AE opens a «System Compatibility Report» before the
-  project; dismiss it — scripting is blocked while it is up and the server reports a timeout.
+## How it stays safe
 
-| Variable                  | Default     | Meaning                                                                          |
-| ------------------------- | ----------- | -------------------------------------------------------------------------------- |
-| `AE_MCP_EXE`              | auto-detect | the After Effects `.app` bundle (macOS) or `AfterFX.exe` (Windows)               |
-| `AE_MCP_READONLY`         | off         | `1` / `true` → nothing may modify the project; recommended for the first session |
-| `AE_MCP_ENABLE_EVAL`      | off         | `1` / `true` → `eval.run` (arbitrary ExtendScript) becomes available             |
-| `AE_MCP_ALLOW_CATEGORIES` | all         | comma-separated allowlist of operation categories                                |
-| `AE_MCP_RUNTIME_DIR`      | OS temp     | where the IPC mailbox lives                                                      |
-| `MCP_TIMEOUT`             | client      | set it to `120000` in the client config — a cold AE start does not fit 30 s      |
+|                                 |                                                                                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Dry run**                     | `ae_do {dryRun: true}` shows the ExtendScript that _would_ run and never touches After Effects.                                                                     |
+| **One undo group per call**     | every `ae_do` — even a 30-step `batch.run` — is one Cmd+Z. `batch.run {atomic: true}` undoes itself when a step fails and says so (`rollback.verified`).            |
+| **Checkpoints**                 | `project.checkpoint` keeps a copy of the .aep next to the project; `project.revert` brings it back after a crash, a relaunch or a bad idea — things undo cannot do. |
+| **Project lock**                | `AE_MCP_PROJECT_LOCK=/path/to/one.aep` — the agent may change only that project; your other open work is untouchable.                                               |
+| **Read-only mode**              | `AE_MCP_READONLY=1` for a first session: inspection and check frames only.                                                                                          |
+| **Honest errors**               | every failure has a code (`DIALOG_OPEN`, `TIMEOUT`, `INVALID_ARGS`, `OPERATION_FAILED` …) and a hint; a batch reports which step failed.                            |
+| **Nothing installed inside AE** | the server talks to After Effects from outside (`osascript` / `AfterFX.exe -r`); uninstall = delete the folder.                                                     |
 
-## Motion-graphics skill (AE Motion)
+What to forbid on the client side, if you gate at all: what Cmd+Z cannot revert — `eval.run`,
+`project.new / open / revert`, the purge/consolidate operations, `pref.*`, `render.start`. The list
+and a reference implementation are in [`docs/AGENT-POLICY.md`](docs/AGENT-POLICY.md).
 
-`skills/ae-motion/SKILL.md` teaches the agent to build motion graphics **as an editable After Effects
-project**, not as a rendered clip: titles, lower thirds, kinetic type, logo stings, infographics,
-transitions and overlays made of native text and shape layers, keyframes with real easing,
-expressions driven by a `CONTROLS` null (Speed, Delay, colours, switches) and Essential Graphics
-properties (MOGRT export on request). The workflow:
+## How the agent sees the project
 
-1. read the reference image and the motion brief; check that the fonts are installed;
-2. show a breakdown table — what is built natively in AE, what is generated source material
-   (illustrations as separate transparent PNGs), the background (still, video footage or
-   generative — never baked into the plate), and what would need an external render (last resort);
-3. build through `ae_do` / `batch.run` (one undo group per step), parent at rest, ease every key;
-4. verify with a few `ae_render_frame` checks (entrance / mid / hold / exit) and report the controls.
+- **`ae_project_info` / `ae_comp_info` / `ae_layer_info`** — the full picture when needed.
+- **`comp.snapshot` → edit → `comp.diff`** — a cheap fingerprint before and after: which layers
+  were added, removed or changed, and in what. Verification in a few dozen tokens.
+- **`ae_render_frame`** — a PNG the agent can look at; `compareWith` an earlier frame answers
+  "did the picture change, and where" without opening the image.
+- **`property.sample`** — a camera's position / orientation / zoom at start, middle and end in one
+  call; **`expression.validate`** and **`project.audit`** — errors before the user hits play.
 
-The skill routes to topic references (easing and rigging, shapes, text animators, expressions,
-MOGRT, ExtendScript pitfalls, After Effects 2026 changes, motion principles) from five open skill
-sets. They are **fetched, not bundled**: run `skills/ae-motion/fetch-vendor.sh` once (pinned commits,
-download only). The skill also maps those sets' tool names to this server's operations.
+## The skill
 
-Use it as a skill in clients that support them (e.g. copy `skills/ae-motion` into
-`~/.claude/skills/` for Claude Desktop), or point the model at `SKILL.md` in your
-system prompt.
+`skills/ae/SKILL.md` is a short **router** the agent reads first; it points to the one file the
+task needs:
+
+|                                                      |                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SKILL.md`                                           | the call budget (what made a live plug-in test cost 76 calls an hour — and how not to), the order of work (know the state → checkpoint → operate → verify by values, then by frame), and a table of **what a script cannot do in After Effects** with the safe workaround for each. |
+| `recipes/camera-track.md`                            | 3D Camera Tracker end to end: start the analysis from the menu, wait in one call, press «Create Camera» with a real click (a synthetic click crashed AE 26.5), set the ground plane, read the camera back as numbers.                                                               |
+| `recipes/attach-3d.md`                               | put a splat, a model or a solid on tracked footage: null at the origin, parent or expressions, scale, and a script that **measures** slide in pixels instead of eyeballing it.                                                                                                      |
+| `recipes/plugin-test.md`                             | test a third-party plug-in: inspect the files before installing, apply on a solid, dump parameters by matchName, feed it a model layer, render, time it, write the verdict.                                                                                                         |
+| `recipes/render.md`                                  | frames, segment renders, templates on a localized AE, where files go.                                                                                                                                                                                                               |
+| `recipes/motion-graphics.md`                         | titles, lower thirds, logo stings, infographics as an **editable** AE comp: breakdown table, CONTROLS rig, real easing, Essential Graphics, a frame per phase.                                                                                                                      |
+| `recipes/masks-roto.md`, `recipes/tracking-mocha.md` | masks and track mattes, Object Matte / Roto Brush, the Tracker panel and Mocha — what to script, what the user clicks.                                                                                                                                                              |
+| `plugins/<name>.md`                                  | one knowledge file per plug-in (matchNames, how it takes input, what is UI-only, quirks, timing). First: irrealix Gaussian Splatting. Template in `plugins/README.md`.                                                                                                              |
+| `scripts/`                                           | only the UI steps no script can do: hardware-level mouse events, window and display geometry, menu clicks by localized name, dialogs, a one-call wait for an analysis, screenshots, a frame strip, the slide measurement. **No script duplicates a server operation.**              |
+
+Use it as a skill in clients that support them (copy `skills/ae` into `~/.claude/skills/`, or point
+your system prompt at `SKILL.md`). The motion-graphics recipe routes to topic references from five
+open MIT skill sets; they are fetched, not bundled — run `skills/ae/fetch-vendor.sh` once.
 
 ## Tools
 
-| Tool                                                                     | Purpose                                                                                                                                |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `ae_catalog`                                                             | list the 23 categories and 199 operations, or one operation with its parameters                                                        |
-| `ae_do`                                                                  | run one operation (`operation`, `args`, `dryRun`) — one undo group per call; `batch.run` executes several operations in one undo group |
-| `ae_context`                                                             | ambient context for the agent: project state, active comp, selection, ES3 rules, the undo contract                                     |
-| `ae_project_info` / `ae_comp_info` / `ae_layer_info` / `ae_version_info` | introspection                                                                                                                          |
-| `ae_save_project`                                                        | save                                                                                                                                   |
-| `ae_project_export_json` / `ae_project_import_json`                      | whole-project round trip (also the way to snapshot and restore)                                                                        |
-| `ae_render_frame`                                                        | render one frame to PNG for the agent to look at                                                                                       |
+| Tool                                                                                    | Purpose                                                                             |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `ae_catalog` / `ae_do`                                                                  | discover the operations (24 categories) and run one — or several in one `batch.run` |
+| `ae_project_info` / `ae_comp_info` / `ae_layer_info` / `ae_version_info` / `ae_context` | read                                                                                |
+| `ae_render_frame`                                                                       | one frame as PNG (viewer-accurate colour; `compareWith` for metrics)                |
+| `ae_save_project`, `ae_project_export_json` / `ae_project_import_json`                  | save; whole-project JSON round trip                                                 |
+| `ae_dialogs`                                                                            | see and dismiss the modal dialogs that block scripting                              |
 
-The full operation reference is generated from the source: [`docs/TOOLS.md`](docs/TOOLS.md).
+Full list with parameters: [`docs/TOOLS.md`](docs/TOOLS.md); the operations are listed by
+`ae_catalog` at runtime.
 
-## Safety model for agents
+| Variable                  | Default             | Meaning                                                            |
+| ------------------------- | ------------------- | ------------------------------------------------------------------ |
+| `AE_MCP_EXE`              | auto-detect         | the After Effects `.app` bundle (macOS) or `AfterFX.exe` (Windows) |
+| `AE_MCP_READONLY`         | off                 | `1` → nothing may modify the project                               |
+| `AE_MCP_PROJECT_LOCK`     | off                 | path of the one `.aep` the agent may change                        |
+| `AE_MCP_CHECKPOINT_DIR`   | next to the project | where `project.checkpoint` keeps its copies                        |
+| `AE_MCP_ENABLE_EVAL`      | off                 | `1` → `eval.run` (arbitrary ExtendScript) becomes available        |
+| `AE_MCP_ALLOW_CATEGORIES` | all                 | comma-separated allow-list of operation categories                 |
+| `AE_MCP_RUNTIME_DIR`      | OS temp             | where the IPC mailbox lives                                        |
+| `MCP_TIMEOUT`             | client              | set `120000` in the client config                                  |
 
-- **Dry run first.** `ae_do {dryRun: true}` returns the ExtendScript that _would_ run and never
-  contacts After Effects. Let the agent plan, then execute.
-- **Deny what Cmd+Z cannot revert.** Because every call is one undo group, creating, editing and
-  even deleting layers is reversible and needs no gate. Forbid on the client side: `eval.run`
-  (arbitrary ExtendScript = file system access), `project.new` / `project.open` (drop unsaved
-  work), `project.reduce` / `purge` / `remove_unused_footage` / `consolidate_footage` (outside the
-  undo stack), `pref.*` and `render.save_template` (change the application, not the project),
-  `render.start` / `render.queue_in_ame` (write files, occupy AE). Nested batches must be gated by
-  their inner `ops` — a batch wrapper is not a way around a rule.
-- `AE_MCP_READONLY=1` for the first experiments on a new machine. `AE_MCP_ENABLE_EVAL` stays off.
-- The upstream `npm test` **is not safe on macOS with After Effects open**: four transport tests
-  assume a fake executable isolates them, but on macOS the path is not executed — the live AE
-  answers. Run the suite with AE closed or on CI (where it self-skips).
+## Why this one
 
-## Release history
+There are several After Effects MCP servers; most stop at "the AI can run ExtendScript". This one
+is built around what an **autonomous** agent needs — and what the person handing over a project
+needs: a small stable tool surface (two tools instead of 270), a real dry run, undo-safe
+operations, checkpoints and a project lock, honest errors, an installer that says what is wrong,
+and a skill that teaches the agent the parts of After Effects no API covers. Verified on AE 2026,
+macOS and Windows, English and Russian UI.
+
+## Releases
 
 Each version is described on the
-[**Releases**](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases) page — what the
-server does at that version and what the release added:
+[**Releases**](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases) page;
+every change is in [`CHANGELOG.md`](CHANGELOG.md). Upstream fixes are merged from
+[kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic.
 
+- [v0.5.5](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.5) · 2026-10-11 —
+  the After Effects skill (`skills/ae`), checkpoints + revert, atomic batches, comp snapshot/diff,
+  expression validation, project audit, dialog detection, project lock, frame compare.
+- [v0.4.4](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.4) · 2026-10-04 —
+  Windows: Claude Desktop from the Microsoft Store.
+- [v0.4.3](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.3) · 2026-10-04 —
+  Windows verified (AfterFX.exe -r launch path).
 - [v0.4.2](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.2) · 2026-10-01 —
-  fix: the ChatGPT gateway command under `npx -p`.
-- [v0.4.1](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.1) · 2026-10-01 —
-  ChatGPT in one command (gateway + tunnel), client icons in Install.
-- [v0.4.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.0) · 2026-10-01 —
-  one-click installs: Claude Desktop extension (`.mcpb`), «Add to Cursor», npm package, `install.sh` /
-  `install.ps1` that write the client configs.
+  ChatGPT gateway fix; [v0.4.1](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.1) — ChatGPT in one command;
+  [v0.4.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.4.0) — one-click installs (`.mcpb`, Cursor, npm, installers).
 - [v0.3.5](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.5) · 2026-09-30 —
-  the AE Motion skill (editable motion graphics built natively in AE); server and tools unchanged.
-- [v0.3.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.0) · 2026-09-30 —
-  first public release of the IMT fork: the full server (199 operations, 23 categories) plus the fork's dry run,
-  effect presets, render folders, installer with self-test and the agent policy.
+  the AE Motion skill; [v0.3.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.3.0) — first public release of the IMT fork.
 
-Every change, including the upstream history 0.1.0 – 0.2.0, is in [`CHANGELOG.md`](CHANGELOG.md).
-
-## Changes against upstream
-
-See [`CHANGELOG.md`](CHANGELOG.md) and [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). In short:
-the `ae_do` dry run that really is one; effect templates that exist and work on localized AE, with
-misses reported in `warnings`; render output folders; the installer with a live self-test; the agent
-permission model and the macOS notes above; since 0.3.5 the AE Motion skill. Upstream fixes are merged from
-[kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic,
-one at a time.
+A note for contributors: the offline transport tests (`npm test`) expect After Effects to be
+**closed** on macOS — with it open the live AE answers the stand-in requests and a few of them fail.
 
 ## License
 
 **[IMT Non-Commercial License](LICENSE)** — © Immersive Media Technologies.
 
 - **Non-commercial use only.** Selling this software, offering it as or inside a paid product or
-  service, or using it in commercial client work requires a separate written license from
-  Immersive Media Technologies.
+  service, or using it in commercial client work requires a separate written license.
 - **Attribution is mandatory.** Every use, copy, fork or derived product must credit the creator,
   visibly to its users: `AE-MCP-IMT by Immersive Media Technologies — https://github.com/Immersive-Media-Technologies`.
 - No warranty.
 
-Full terms: [`LICENSE`](LICENSE). Third-party notices: [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+Full terms: [`LICENSE`](LICENSE). Third-party notices (upstream MIT code, vendored skill sets):
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
