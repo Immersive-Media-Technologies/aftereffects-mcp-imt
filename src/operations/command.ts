@@ -39,15 +39,27 @@ registerOp({
   category: "command",
   readOnly: true,
   description:
-    "Find a menu command ID by name (AE's app.findMenuCommandId). Note: not reliable across languages.",
+    "Find a menu command ID by its menu label (AE's app.findMenuCommandId). The label must be the one THIS After Effects shows — a localized AE needs the localized label («Сбор файлов…», not «Collect Files...»); the trailing ellipsis is tried both as «...» and «…». Command IDs themselves are language-independent: check command.list first, then command.execute {id}.",
   params: [
-    { name: "name", type: "string", description: "Menu command name (English)", required: true },
+    {
+      name: "name",
+      type: "string",
+      description: "Menu command label as shown in this AE's UI language",
+      required: true,
+    },
   ],
   toJsx(args) {
     return `
-            var _id = app.findMenuCommandId(${jsxVal(args.name)});
-            if (!_id || _id === 0) return { ok: false, error: "command not found: " + ${jsxVal(args.name)} };
-            return { ok: true, name: ${jsxVal(args.name)}, commandId: _id };
+            var _name = ${jsxVal(args.name)};
+            var _base = String(_name).replace(/(\\.\\.\\.|\\u2026)\\s*$/, "");
+            var _tries = [_name, _base + "...", _base + "\\u2026", _base];
+            var _id = 0, _hit = _name;
+            for (var _i = 0; _i < _tries.length && !_id; _i++) {
+                try { _id = app.findMenuCommandId(_tries[_i]); } catch (eF) { _id = 0; }
+                if (_id) _hit = _tries[_i];
+            }
+            if (!_id || _id === 0) return { ok: false, error: "command not found: " + _name + " — the label must match this AE's UI language exactly (localized AE: localized label, e.g. \u00ab\u0421\u0431\u043e\u0440 \u0444\u0430\u0439\u043b\u043e\u0432\u2026\u00bb); known language-independent ids: command.list" };
+            return { ok: true, name: _hit, commandId: _id };
         `;
   },
 });
@@ -56,12 +68,14 @@ registerOp({
   name: "command.list",
   category: "command",
   readOnly: true,
-  description: "Return a curated list of commonly-used menu command IDs.",
+  description:
+    "Return a curated list of commonly-used menu command IDs (language-independent — use them with command.execute on a localized AE instead of command.find).",
   params: [],
   toJsx() {
     return `
             return { ok: true, commands: [
                 { id: 16, name: "Undo" },
+                { id: 2482, name: "Collect Files... (File > Dependencies; opens the dialog — drive it with the UI scripts of the AE skill)" },
                 { id: 2004, name: "New Composition" },
                 { id: 2005, name: "New Folder" },
                 { id: 2019, name: "New Solid" },

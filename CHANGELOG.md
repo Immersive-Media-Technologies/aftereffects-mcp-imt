@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-10-22
+
+Errors an agent can act on (live session «Dream observation», 22.10: three `eval.run` calls died with
+«Invalid numeric result (divide by zero?) (line 5)» and `command.find` could not see a localized menu).
+
+### Changed
+
+- **eval errors quote the offending line of the agent's code** (`(line 2 of your code: "pos=" + L.transform.position.value)`)
+  instead of the bare line number of the `new Function` wrapper; «Invalid numeric result» carries the hint
+  that an array property value was concatenated into a string (ExtendScript throws there — use
+  `value.join(',')` / `JSON.stringify`). `eval.run` says so in its description too.
+- **`command.find` on a localized After Effects:** the label must be the one this AE shows («Сбор файлов…»);
+  the ellipsis is tried as `...` and `…`; the failure text says why and points to `command.list`, whose ids
+  are language-independent — `Collect Files...` (2482) added there.
+
 ### Verified
 
 - **Windows 11 (ARM, Parallels) · Claude Desktop from the Microsoft Store (2.31226, arm64) · After

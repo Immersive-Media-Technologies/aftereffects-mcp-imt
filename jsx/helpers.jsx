@@ -25,7 +25,31 @@ AE.errText = function (e) {
         if (typeof e === "string") return e;
         var msg = (e.message === undefined || e.message === null) ? "" : String(e.message);
         if (msg.length === 0) msg = "error";
-        if (e.line !== undefined && e.line !== null) msg += " (line " + String(e.line) + ")";
+        if (e.line !== undefined && e.line !== null) {
+            // The code of eval.run is compiled with `new Function(...)`: ExtendScript prepends one header
+            // line — `function anonymous(app,log,payload)` — so the user's line N is reported as N+1.
+            // Quote the offending source line itself — «(line 5)» alone told the agent nothing.
+            var ln = Number(e.line);
+            var src = (e.source === undefined || e.source === null) ? "" : String(e.source);
+            var anon = src.indexOf("function anonymous(") === 0;
+            msg += " (line " + String(anon && ln > 1 ? ln - 1 : ln) + (anon ? " of your code" : "");
+            if (src.length > 0 && ln >= 1) {
+                var rows = src.split(/\r?\n/);
+                var row = rows[ln - 1];
+                if (row !== undefined && row !== null) {
+                    row = String(row).replace(/^\s+|\s+$/g, "");
+                    if (row.length > 160) row = row.substring(0, 160) + "\u2026";
+                    if (row.length > 0) msg += ": " + row;
+                }
+            }
+            msg += ")";
+        }
+        // ExtendScript throws «Invalid numeric result (divide by zero?)» when an ARRAY property value
+        // (Position, Scale, Anchor Point, a Color) is concatenated into a string ("pos=" + p.value).
+        if (new RegExp("Invalid numeric result|\u043d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u0447\u0438\u0441\u043b\u043e\u0432\u043e\u0439", "i").test(msg)) {
+            msg += " [hint: an array value (position/scale/anchor/color) was concatenated into a string -"
+                + " ExtendScript throws here; use value.join(',') or JSON.stringify(value)]";
+        }
         return msg;
     } catch (eFmt) {
         return "unformattable error";
