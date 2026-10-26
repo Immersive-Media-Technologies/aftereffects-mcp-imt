@@ -1,6 +1,6 @@
 {
   "name": "@immersive-media-technologies/aftereffects-mcp-imt",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "AE-MCP-IMT + SKILLS — MCP server and agent skill for Adobe After Effects, built for autonomous AI agents (macOS + Windows): ~270 undo-grouped operations behind two tools, dry run, checkpoints with revert, atomic batches, project lock, dialog detection, live self-test installer; the skill covers camera tracking, 3D content on footage, plug-in tests, render and editable motion graphics. By Immersive Media Technologies (fork of kumoproductions/mcp-aftereffects).",
   "keywords": [
     "adobe",
