@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The offline transport suite drove a real After Effects on macOS.** Its stand-in executable was `/bin/true`, which
+  macOS does not have (`/usr/bin/true`); `resolveAfterFxPath` fell through to the installed AE, so every `npm test`
+  booted it, left `osascript` processes blocked for two hours, and let the AE-gated e2e suite probe the instance it
+  had just launched. With the path fixed instead, `osascript` could not address a non-bundle path and every timeout
+  test failed as TRANSPORT. On macOS a path with no `.app` bundle (a wrapper script, a test stand-in) is now spawned
+  directly — AppleScript can only address bundles — and the suite fails loudly if its stand-in is missing.
+
 ### Changed
 
 - **The Claude Desktop extension name carries the version** («AE-MCP-IMT + SKILLS — After Effects for AI agents ·

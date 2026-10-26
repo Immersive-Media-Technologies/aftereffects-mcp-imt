@@ -76,6 +76,12 @@ describe("buildLaunchPlan (darwin)", () => {
     expect(plan.args.at(-1)).toBe("end timeout");
   });
 
+  it("spawns a path with no .app bundle directly — AppleScript can only address bundles", () => {
+    // a wrapper script or a test stand-in: never an osascript syntax error, never a real AE
+    const plan = buildLaunchPlan("/usr/bin/true", "darwin", RUNTIME, DISPATCHER);
+    expect(plan).toEqual({ command: "/usr/bin/true", args: [], diagnoseExit: false });
+  });
+
   it("normalizes a path into the bundle when AE_MCP_EXE points inside the .app", () => {
     const inner = `${AE_MAC}/Contents/MacOS/AfterFX`;
     const plan = buildLaunchPlan(inner, "darwin", RUNTIME, DISPATCHER);

@@ -6,7 +6,8 @@
 import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { existsSync } from "node:fs";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   BUSY_LOCK_PATH,
@@ -25,9 +26,16 @@ import { FileIpcTransport } from "../src/transport/FileIpcTransport.js";
  *
  * Per-platform because `resolveAfterFxPath` stats it: a Windows-only path made
  * every timeout and busy-lock test fail with AE_NOT_FOUND on Linux CI, before
- * the behaviour under test could run at all.
+ * the behaviour under test could run at all. `/usr/bin/true`, not `/bin/true`:
+ * macOS has no `/bin/true`, and a stand-in that does not exist falls through to
+ * the default install paths — the suite then drove a real After Effects.
  */
-const INERT_EXE = process.platform === "win32" ? "C:/Windows/System32/cmd.exe" : "/bin/true";
+const INERT_EXE = process.platform === "win32" ? "C:/Windows/System32/cmd.exe" : "/usr/bin/true";
+
+beforeAll(() => {
+  // Fail loudly instead of silently testing against an installed AE.
+  if (!existsSync(INERT_EXE)) throw new Error(`stand-in executable missing: ${INERT_EXE}`);
+});
 
 const savedExe = process.env.AE_MCP_EXE;
 

@@ -19,6 +19,10 @@
 // Unlike AfterFX.exe, osascript's exit code IS meaningful — non-zero with
 // "Not authorized to send Apple events" (-1743) means the OS-level Automation
 // permission was denied — so the transport watches it for fast failure.
+// AppleScript can only address an application bundle: a path with no `.app`
+// in it (a wrapper script, a test stand-in) is spawned directly instead. It
+// never receives the dispatcher, so the call ends as a spawn failure or a
+// TIMEOUT — never an AppleScript syntax error, and never a real AE.
 
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
@@ -64,6 +68,9 @@ export function buildLaunchPlan(
   dispatcherJsx: string = DISPATCHER_JSX,
   runtimeRoot: string = RUNTIME_ROOT,
 ): LaunchPlan {
+  if (platform === "darwin" && !/\.app$/i.test(appBundlePath(aePath))) {
+    return { command: aePath, args: [], diagnoseExit: false };
+  }
   if (platform === "darwin") {
     const bootstrap =
       `$.global.AE_MCP_RUNTIME_DIR_OVERRIDE = ${jsxPath(runtimeDir)}; ` +
