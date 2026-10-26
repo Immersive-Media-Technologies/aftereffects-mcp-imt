@@ -294,3 +294,35 @@ describe("spawn failure", () => {
     expect(await mailboxEntries(REQUEST_PREFIX)).toEqual(before);
   });
 });
+
+describe("engine phase (0.5.7)", () => {
+  it("maps the dispatcher's `engine` phase to ENGINE_STUCK with the restart advice", () => {
+    process.env.AE_MCP_EXE = INERT_EXE;
+    const transport = new FileIpcTransport();
+    // The dispatcher writes this when `new Function("return 1")` itself throws inside AE —
+    // the engine is stuck, the agent's code never ran, and only restarting AE helps.
+    const res = (
+      transport as unknown as {
+        toEvalResult: (
+          parsed: Record<string, unknown>,
+          durationMs: number,
+        ) => { ok: boolean; errorCode: string | null; error: string | null };
+      }
+    ).toEvalResult(
+      {
+        id: "x",
+        ok: false,
+        phase: "engine",
+        result: null,
+        error: "ExtendScript engine cannot compile code any more",
+        stack: null,
+        logs: [],
+      },
+      5,
+    );
+    expect(res.ok).toBe(false);
+    expect(res.errorCode).toBe("ENGINE_STUCK");
+    expect(res.error).toContain("quit After Effects");
+    expect(res.error).toContain("do not retry");
+  });
+});

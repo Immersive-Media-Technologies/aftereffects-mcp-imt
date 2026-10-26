@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`ENGINE_STUCK`** — a new error code for the state seen on AE 26.5 after a long session (26.10): every
+  `new Function`, even `return 1`, throws «Syntax error» at line 1–2 while `$.evalFile` of the dispatcher still
+  runs, so `ae_version_info`, `ae_project_info` and every `ae_do` died as `JSX_THROW` and agents kept retrying.
+  The dispatcher now compiles a canary (`new Function("return 1")`) before the agent's code and answers with
+  its own phase (`engine`); the server maps it to `ENGINE_STUCK` with the only cure spelled out — save, quit
+  After Effects, open it again; do not retry until then.
+
+### Fixed
+
+- **The quoted line of an eval error** — for `new Function` code ExtendScript hands `e.source` as one line with
+  the newlines written out as `\n`, so «(line 1 of your code: …)» quoted the whole source. Both formatters split
+  on the literal `\n` too and quote the real line.
+
 ## [0.5.6] - 2026-10-22
 
 Errors an agent can act on (live session «Dream observation», 22.10: three `eval.run` calls died with

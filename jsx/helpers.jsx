@@ -35,6 +35,9 @@ AE.errText = function (e) {
             msg += " (line " + String(anon && ln > 1 ? ln - 1 : ln) + (anon ? " of your code" : "");
             if (src.length > 0 && ln >= 1) {
                 var rows = src.split(/\r?\n/);
+                // 0.5.7: for `new Function` code ExtendScript hands `e.source` as ONE line with the newlines
+                // written out as the two characters `\n` — split on those too, or «line 1» quotes the whole source.
+                if (rows.length === 1 && src.indexOf("\\n") !== -1) rows = src.split("\\n");
                 var row = rows[ln - 1];
                 if (row !== undefined && row !== null) {
                     row = String(row).replace(/^\s+|\s+$/g, "");

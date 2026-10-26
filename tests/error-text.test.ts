@@ -77,6 +77,15 @@ describe.each([
     expect(format(input)).toBe(expected);
   });
 
+  it("quotes the offending line when ExtendScript hands the source as one escaped line", () => {
+    // `new Function` code comes back in `e.source` as a single line with the newlines spelled `\n`;
+    // 0.5.6 quoted the whole source for «line 1», 0.5.7 splits on the literal `\n` as well.
+    const src =
+      "function anonymous(app,log,payload)\\n{\\n        var _opResult = (function() {\\n            var r = app.project.file;\\n        })();\\n}";
+    const err = Object.assign(new Error("Syntax error"), { line: 4, source: src });
+    expect(format(err)).toBe("Syntax error (line 3 of your code: var r = app.project.file;)");
+  });
+
   it("appends the ExtendScript line number when there is one", () => {
     // `e.line` is ExtendScript's, not Node's — it is what told us the failure
     // was at json2.jsx:24 once the handler stopped throwing over the top of it.

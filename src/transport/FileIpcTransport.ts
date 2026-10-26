@@ -36,8 +36,9 @@ interface SpawnState {
 interface DispatcherResponse {
   id: string | null;
   ok: boolean;
-  /** "dispatch" = failed before running our code; "execute" = our code threw. */
-  phase?: "dispatch" | "execute";
+  /** "dispatch" = failed before running our code; "execute" = our code threw;
+   *  "engine" = ExtendScript cannot compile anything any more (restart AE). */
+  phase?: "dispatch" | "execute" | "engine";
   result: unknown;
   error: string | null;
   stack: string | null;
@@ -443,6 +444,17 @@ export class FileIpcTransport implements AeTransport {
       };
     }
     const dispatchFailure = parsed.phase === "dispatch";
+    if (parsed.phase === "engine") {
+      return {
+        ok: false,
+        result: null,
+        error: `${parsed.error}\nAfter Effects' scripting engine is stuck: this is not a fault of the code that was sent. Tell the user to save the project, quit After Effects and open it again; do not retry until then.`,
+        errorCode: "ENGINE_STUCK",
+        stack: parsed.stack,
+        logs: parsed.logs ?? [],
+        durationMs,
+      };
+    }
     return {
       ok: false,
       result: null,

@@ -26,6 +26,8 @@ export type AeErrorCode =
   | "DISPATCHER"
   /** The generated ExtendScript threw inside AE. */
   | "JSX_THROW"
+  /** ExtendScript inside AE cannot compile any code any more (`new Function("return 1")` throws) — restart AE. */
+  | "ENGINE_STUCK"
   /** The operation ran to completion and reported `{ ok: false }`. */
   | "OPERATION_FAILED"
   /** No operation with that name (or it is filtered out by policy). */

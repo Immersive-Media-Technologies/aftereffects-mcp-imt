@@ -68,6 +68,9 @@
                 msg += " (line " + String(anon && ln > 1 ? ln - 1 : ln) + (anon ? " of your code" : "");
                 if (src.length > 0 && ln >= 1) {
                     var rows = src.split(/\r?\n/);
+                    // 0.5.7: for `new Function` code ExtendScript hands `e.source` as ONE line with the newlines
+                    // written out as the two characters `\n` — split on those too, or «line 1» quotes the whole source.
+                    if (rows.length === 1 && src.indexOf("\\n") !== -1) rows = src.split("\\n");
                     var row = rows[ln - 1];
                     if (row !== undefined && row !== null) {
                         row = String(row).replace(/^\s+|\s+$/g, "");
@@ -310,7 +313,7 @@
          */
         function writeFallbackResponse(why) {
             try {
-                var phase = (response.phase === "execute") ? "execute" : "dispatch";
+                var phase = (response.phase === "execute" || response.phase === "engine") ? response.phase : "dispatch";
                 var body = "{\"id\":\"" + jsonSafeAscii(requestId)
                     + "\",\"ok\":false,\"phase\":\"" + phase
                     + "\",\"result\":null,\"error\":\"" + jsonSafeAscii("could not serialize response: " + why)
@@ -401,6 +404,19 @@
         var wantSuppress = (typeof request.suppressDialogs === "boolean") ? request.suppressDialogs : wantUndoGroup;
         var undoOpen = false;
         var dialogsSuppressed = false;
+        // 0.5.7: a stuck ExtendScript engine (seen on AE 26.5 after a long session: every `new Function`,
+        // even `return 1`, throws «Syntax error» at line 1–2 while $.evalFile of this dispatcher still runs)
+        // is reported as its own phase, not as a JSX_THROW of the agent's code — the only cure is restarting AE.
+        try {
+            (new Function("return 1"))();
+        } catch (eCanary) {
+            response.phase = "engine";
+            response.error = "ExtendScript engine cannot compile code any more (`new Function(\"return 1\")` threw: "
+                + describeError(eCanary) + ") — restart After Effects (save, quit, reopen); retrying will not help";
+            response.stack = errStack(eCanary);
+            writeResponse();
+            return;
+        }
         response.phase = "execute";
         try {
             if (wantSuppress) {
