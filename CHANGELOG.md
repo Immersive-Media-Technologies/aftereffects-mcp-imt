@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **The Claude Desktop extension name carries the version** («AE-MCP-IMT + SKILLS — After Effects for AI agents ·
+  v0.5.8»): Claude Desktop does not show the manifest `version`, so an installed bundle could not be told apart
+  from the previous one. `build-mcpb.mjs` appends it at pack time; `mcpb/manifest.json` keeps the bare name.
+  Hosts that derive tool ids from the extension name (Claude Desktop) see new ids with each version.
+
 ## [0.5.8] - 2026-10-26
 
 ### Fixed
