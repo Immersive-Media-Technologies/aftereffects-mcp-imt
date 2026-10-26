@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Every call died as «Syntax error (line 1–2)» while another CEP panel was open** (26.10, live session
+  «Dream observation V3»). `com.fossa.tether` (panel «TETHER», `AutoVisible`) runs a `host.jsx` in the same
+  ExtendScript engine that unconditionally replaces the global `JSON.parse` / `JSON.stringify` with its own;
+  that parser does not decode string escapes, so a request's `\n` reached `new Function` as two characters
+  and the agent's code collapsed onto one line. Proven in AE 26.5 with a probe: `JSON.parse('{"c":"a\\nb"}')`
+  gave 4 characters (`a`, `\`, `n`, `b`); every `new Function`/`eval` variant compiled fine. Restarting AE did
+  not help because the panel loads again.
+  - `json2.jsx` now ALWAYS builds ae-mcp's own implementation as `$.global.AE_MCP_JSON`; the global `JSON` is
+    installed only when there is none, as before — another extension's JSON is never touched.
+  - The dispatcher reads the request and writes the response through `AE_MCP_JSON` only, and for the length
+    of the call puts it into `$.global.JSON` (generated code and `eval.run` use `JSON.stringify`), restoring
+    the panel's object in `finally`. A foreign JSON that fails the escape probe is named in the call's logs.
+  - The quoted line of a one-line source with undecoded `\n` now carries the hint that a foreign
+    `JSON.parse` is the cause.
+
+### Changed
+
+- The 0.5.7 notes called the 26.10 failure a stuck ExtendScript engine. It was the foreign `JSON.parse`
+  above; `ENGINE_STUCK` stays for a real stuck engine (the canary `new Function("return 1")` throwing),
+  which this case never was.
+
 ## [0.5.7] - 2026-10-26
 
 ### Added

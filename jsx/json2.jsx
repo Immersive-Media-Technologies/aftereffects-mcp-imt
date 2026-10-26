@@ -4,8 +4,14 @@
 // fallback below is written to be safe on untrusted input regardless, because
 // everything the dispatcher reads — including caller-supplied project
 // documents travelling as `payload` — flows through JSON.parse.
-if (typeof JSON === "undefined" || !JSON || typeof JSON.stringify !== "function" || typeof JSON.parse !== "function") {
-    (function () {
+//
+// 0.5.8: the implementation below is ALWAYS built and kept private as `$.global.AE_MCP_JSON`; the dispatcher
+// reads and writes the mailbox only through it. Other extensions share this ExtendScript engine and may replace
+// the global JSON outright — com.fossa.tether's host.jsx (CEP panel «TETHER», AutoVisible) assigns its own
+// JSON.parse that does not decode escapes, so «\n» in a request stayed two characters and every call died as
+// «Syntax error (line 1–2)» (26.10.2026). A global JSON is installed only when there is none.
+(function () {
+    {
         var escMap = {
             "\\": "\\\\",
             "\"": "\\\"",
@@ -99,6 +105,9 @@ if (typeof JSON === "undefined" || !JSON || typeof JSON.stringify !== "function"
             }
             return eval("(" + t + ")");
         }
-        JSON = { stringify: stringify, parse: parse };
-    })();
-}
+        $.global.AE_MCP_JSON = { stringify: stringify, parse: parse };
+        if (typeof JSON === "undefined" || !JSON || typeof JSON.stringify !== "function" || typeof JSON.parse !== "function") {
+            JSON = $.global.AE_MCP_JSON;
+        }
+    }
+})();

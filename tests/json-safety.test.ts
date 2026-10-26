@@ -25,11 +25,21 @@ const PS = "\u2029";
  * whatever it installed.
  */
 function loadPolyfill(): { parse: (t: string) => unknown; stringify: (v: unknown) => string } {
+  return loadWith(undefined).installed as ReturnType<typeof loadPolyfill>;
+}
+
+type Json = { parse: (t: string) => unknown; stringify: (v: unknown) => string };
+
+/** Run json2.jsx with a given global JSON (undefined = none) and an ExtendScript-like `$.global`. */
+function loadWith(existing: Json | undefined): { installed: Json | undefined; own: Json } {
   const src = readFileSync(JSON2_PATH, "utf8");
-  const load = new Function("JSON", `${src}\nreturn JSON;`) as (
-    j: undefined,
-  ) => ReturnType<typeof loadPolyfill>;
-  return load(undefined);
+  const global: { AE_MCP_JSON?: Json } = {};
+  const load = new Function("JSON", "$", `${src}\nreturn JSON;`) as (
+    j: Json | undefined,
+    d: { global: typeof global },
+  ) => Json | undefined;
+  const installed = load(existing, { global });
+  return { installed, own: global.AE_MCP_JSON as Json };
 }
 
 /**
@@ -169,5 +179,28 @@ describe("transport request serialization", () => {
   it("stays plain JSON for everything else", () => {
     const value = { id: "abc", label: "keyframe.add", code: 'var x = "q\\"uote";', payload: null };
     expect(JSON.parse(serializeRequest(value))).toEqual(value);
+  });
+});
+
+describe("a foreign JSON in the shared engine (0.5.8)", () => {
+  // com.fossa.tether's host.jsx replaces the global JSON.parse with one that returns string escapes as written.
+  const foreign: Json = {
+    parse: (t: string) => ({ code: t.slice('{"code":"'.length, -2) }),
+    stringify: () => "{}",
+  };
+  const code = "\n    var p = 1;\n    return p;";
+  const raw = JSON.stringify({ code });
+
+  it("leaves the foreign global alone and still builds ae-mcp's own parser", () => {
+    const { installed, own } = loadWith(foreign);
+    expect(installed).toBe(foreign);
+    expect(own).toBeDefined();
+    expect(own).not.toBe(foreign);
+  });
+
+  it("decodes escapes where the foreign parser does not", () => {
+    const { own } = loadWith(foreign);
+    expect((foreign.parse(raw) as { code: string }).code).not.toBe(code);
+    expect((own.parse(raw) as { code: string }).code).toBe(code);
   });
 });

@@ -29,6 +29,7 @@ AE.errText = function (e) {
             // The code of eval.run is compiled with `new Function(...)`: ExtendScript prepends one header
             // line — `function anonymous(app,log,payload)` — so the user's line N is reported as N+1.
             // Quote the offending source line itself — «(line 5)» alone told the agent nothing.
+            var undecoded = false;
             var ln = Number(e.line);
             var src = (e.source === undefined || e.source === null) ? "" : String(e.source);
             var anon = src.indexOf("function anonymous(") === 0;
@@ -37,7 +38,7 @@ AE.errText = function (e) {
                 var rows = src.split(/\r?\n/);
                 // 0.5.7: for `new Function` code ExtendScript hands `e.source` as ONE line with the newlines
                 // written out as the two characters `\n` — split on those too, or «line 1» quotes the whole source.
-                if (rows.length === 1 && src.indexOf("\\n") !== -1) rows = src.split("\\n");
+                if (rows.length === 1 && src.indexOf("\\n") !== -1) { rows = src.split("\\n"); undecoded = true; }
                 var row = rows[ln - 1];
                 if (row !== undefined && row !== null) {
                     row = String(row).replace(/^\s+|\s+$/g, "");
@@ -46,6 +47,8 @@ AE.errText = function (e) {
                 }
             }
             msg += ")";
+            if (undecoded) msg += " [hint: the code reached ExtendScript with its escapes undecoded (\\n as two characters)"
+                + " - a foreign JSON.parse in the shared engine; ae-mcp >= 0.5.8 parses with its own]";
         }
         // ExtendScript throws «Invalid numeric result (divide by zero?)» when an ARRAY property value
         // (Position, Scale, Anchor Point, a Color) is concatenated into a string ("pos=" + p.value).

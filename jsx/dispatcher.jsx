@@ -39,6 +39,18 @@
 #include "import.jsx"
 
 (function dispatcherEntry() {
+    // 0.5.8: the mailbox goes through ae-mcp's own JSON (json2.jsx), never through whatever another panel
+    // left in the shared global — see json2.jsx for the case that broke every call.
+    var OWN_JSON = ($.global.AE_MCP_JSON) ? $.global.AE_MCP_JSON : JSON;
+    function foreignJsonBroken() {
+        try {
+            if (typeof JSON === "undefined" || !JSON || JSON === OWN_JSON) return false;
+            var probe = JSON.parse("{\"a\":\"x\\ny\"}");
+            return !(probe && probe.a === "x\ny");
+        } catch (eProbe) {
+            return true;
+        }
+    }
     // --- Talking about exceptions safely -----------------------------------
     // `"failed: " + e` is not a safe way to report an error in ExtendScript.
     // The engine cannot coerce an Error to a primitive, so the concatenation
@@ -62,6 +74,7 @@
                 // The code of eval.run is compiled with `new Function(...)`: ExtendScript prepends one header
                 // line — `function anonymous(app,log,payload)` — so the user's line N is reported as N+1.
                 // Quote the offending source line itself — «(line 5)» alone told the agent nothing.
+                var undecoded = false;
                 var ln = Number(e.line);
                 var src = (e.source === undefined || e.source === null) ? "" : String(e.source);
                 var anon = src.indexOf("function anonymous(") === 0;
@@ -70,7 +83,7 @@
                     var rows = src.split(/\r?\n/);
                     // 0.5.7: for `new Function` code ExtendScript hands `e.source` as ONE line with the newlines
                     // written out as the two characters `\n` — split on those too, or «line 1» quotes the whole source.
-                    if (rows.length === 1 && src.indexOf("\\n") !== -1) rows = src.split("\\n");
+                    if (rows.length === 1 && src.indexOf("\\n") !== -1) { rows = src.split("\\n"); undecoded = true; }
                     var row = rows[ln - 1];
                     if (row !== undefined && row !== null) {
                         row = String(row).replace(/^\s+|\s+$/g, "");
@@ -79,6 +92,8 @@
                     }
                 }
                 msg += ")";
+                if (undecoded) msg += " [hint: the code reached ExtendScript with its escapes undecoded (\\n as two characters)"
+                    + " - a foreign JSON.parse in the shared engine; ae-mcp >= 0.5.8 parses with its own]";
             }
             // ExtendScript throws «Invalid numeric result (divide by zero?)» when an ARRAY property value
             // (Position, Scale, Anchor Point, a Color) is concatenated into a string ("pos=" + p.value).
@@ -335,7 +350,7 @@
                     appendLog("FATAL: cannot open tmp response for write: " + tmp.error);
                     return;
                 }
-                tmp.write(JSON.stringify(response));
+                tmp.write(OWN_JSON.stringify(response));
                 tmp.close();
                 promoteTmp(tmp);
             } catch (e) {
@@ -363,7 +378,7 @@
             } catch (eRm2) {
                 appendLog("WARN: consuming " + requestName + " threw: " + describeError(eRm2));
             }
-            request = JSON.parse(raw);
+            request = OWN_JSON.parse(raw);
         } catch (eReq) {
             response.error = "failed to read request: " + describeError(eReq);
             response.stack = errStack(eReq);
@@ -404,6 +419,8 @@
         var wantSuppress = (typeof request.suppressDialogs === "boolean") ? request.suppressDialogs : wantUndoGroup;
         var undoOpen = false;
         var dialogsSuppressed = false;
+        var jsonSwapped = false;
+        var prevGlobalJson = null;
         // 0.5.7: a stuck ExtendScript engine (seen on AE 26.5 after a long session: every `new Function`,
         // even `return 1`, throws «Syntax error» at line 1–2 while $.evalFile of this dispatcher still runs)
         // is reported as its own phase, not as a JSX_THROW of the agent's code — the only cure is restarting AE.
@@ -442,6 +459,17 @@
             // `log(msg)` pushes breadcrumbs into response.logs; `payload` carries
             // bulk data that was NOT inlined into the source (see EvalRequest).
             var logs = response.logs;
+            // 0.5.8: generated code and the agent's eval.run code call JSON.stringify/parse; for the length of
+            // this call they get ae-mcp's own, and the panel's JSON is put back in the finally below.
+            if (foreignJsonBroken()) {
+                var jsonNote = "a foreign JSON object in ExtendScript does not decode escapes (another panel replaced"
+                    + " JSON.parse; com.fossa.tether does) - ae-mcp used its own for this call";
+                logs.push(jsonNote);
+                appendLog("WARN: " + jsonNote);
+            }
+            prevGlobalJson = $.global.JSON;
+            jsonSwapped = true;
+            $.global.JSON = OWN_JSON;
             var fn = new Function(
                 "app", "log", "payload",
                 request.code
@@ -459,6 +487,9 @@
             response.error = describeError(eExec);
             response.stack = errStack(eExec);
         } finally {
+            if (jsonSwapped) {
+                try { $.global.JSON = prevGlobalJson; } catch (eJs) { /* ignore */ }
+            }
             if (undoOpen) {
                 try { app.endUndoGroup(); } catch (eEnd) { /* ignore */ }
             }

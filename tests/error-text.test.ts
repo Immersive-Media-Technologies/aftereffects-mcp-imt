@@ -77,13 +77,17 @@ describe.each([
     expect(format(input)).toBe(expected);
   });
 
-  it("quotes the offending line when ExtendScript hands the source as one escaped line", () => {
-    // `new Function` code comes back in `e.source` as a single line with the newlines spelled `\n`;
-    // 0.5.6 quoted the whole source for «line 1», 0.5.7 splits on the literal `\n` as well.
+  it("quotes the real line of a one-line source with undecoded escapes and names the cause", () => {
+    // A source that is ONE line with the newlines spelled as two characters means the request was parsed by a
+    // foreign JSON.parse that does not decode escapes (com.fossa.tether, 26.10) - the code never had a line 2.
     const src =
       "function anonymous(app,log,payload)\\n{\\n        var _opResult = (function() {\\n            var r = app.project.file;\\n        })();\\n}";
     const err = Object.assign(new Error("Syntax error"), { line: 4, source: src });
-    expect(format(err)).toBe("Syntax error (line 3 of your code: var r = app.project.file;)");
+    expect(format(err)).toBe(
+      "Syntax error (line 3 of your code: var r = app.project.file;) [hint: the code reached ExtendScript with" +
+        " its escapes undecoded (\\n as two characters) - a foreign JSON.parse in the shared engine; ae-mcp >= 0.5.8" +
+        " parses with its own]",
+    );
   });
 
   it("appends the ExtendScript line number when there is one", () => {
