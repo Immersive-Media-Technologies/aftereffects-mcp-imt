@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/banner.jpg" alt="AE-MCP-IMT + SKILLS — After Effects for AI agents" width="1280"></p>
+![AE-MCP-IMT + SKILLS — After Effects for AI agents](https://raw.githubusercontent.com/Immersive-Media-Technologies/aftereffects-mcp-imt/main/assets/banner.jpg)
 
 # AE-MCP-IMT + SKILLS — After Effects for AI agents, built to be safe to hand over
 
