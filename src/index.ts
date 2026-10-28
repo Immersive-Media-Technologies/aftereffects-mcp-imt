@@ -21,7 +21,7 @@ const { version } = require("../package.json") as { version: string };
 const transport = new FileIpcTransport();
 
 const server = new McpServer({
-  name: "mcp-aftereffects",
+  name: "aftereffects-mcp-imt",
   version,
 });
 

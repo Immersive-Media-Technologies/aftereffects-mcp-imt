@@ -192,6 +192,8 @@ Each version is described on the
 every change is in [`CHANGELOG.md`](CHANGELOG.md). Upstream fixes are merged from
 [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic.
 
+- [v1.0.1](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.1) · 2026-10-28 —
+  server name `aftereffects-mcp-imt` like the npm package; the MCP Registry entry also lists the npm package.
 - [v1.0.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.0) · 2026-10-28 —
   every After Effects UI language (matchNames, command ids, template names through After Effects'
   dictionaries; verified live), corrected command list, Apache-2.0.
