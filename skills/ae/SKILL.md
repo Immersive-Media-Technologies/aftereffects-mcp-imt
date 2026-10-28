@@ -1,6 +1,6 @@
 ---
 name: ae
-description: Driving Adobe After Effects as an agent through AE-MCP-IMT (ae_catalog / ae_do / ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI workarounds for it, camera tracking, attaching 3D content to tracked footage, testing third-party plugins, rendering, native motion graphics. Read at the start of any After Effects task. This file is the router — read the recipe or plugin file it points to, not everything.
+description: Driving Adobe After Effects as an agent through AE-MCP-IMT (ae_catalog / ae_do / ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI workarounds for it, camera tracking, attaching 3D content to tracked footage, testing third-party plugins, rendering, native motion graphics — on localized After Effects in any UI language too. Read at the start of any After Effects task. This file is the router — read the recipe or plugin file it points to, not everything.
 revision: 4
 updated_at: 2026-10-27
 ---

@@ -9,18 +9,21 @@ effects, keyframes, text, masks and expressions, render check frames — from pl
 Two parts, made to work together:
 
 - **The MCP server** — ~270 small, safe operations behind two tools, with a dry run, one undo
-  group per call, checkpoints, a project lock and honest errors. **Works on every After Effects UI
-  language** (all ten): properties by matchName, menu commands by id, render and output templates
-  by their English name translated through After Effects' own dictionaries — verified live in
-  English and Russian.
+  group per call, checkpoints, a project lock and honest errors.
 - **The skill** (`skills/ae`) — what the agent should _know_: the order of work, what a script
   cannot do in After Effects and how to get around it safely, step-by-step recipes (camera
   tracking, 3D content on footage, plug-in tests, render, motion graphics, masks), and plug-in
   knowledge files.
 
+**Built for localized After Effects, not just English.** Most MCP servers and agent skills for Adobe
+apps assume the English UI — on a German, Japanese or Russian install their effect, template and menu
+names stop matching. AE-MCP-IMT addresses After Effects by its own identifiers (matchNames, command
+ids) and translates English template names through After Effects' own dictionaries, so the same agent
+and the same skill work on every UI language After Effects ships — verified live.
+
 By **[Immersive Media Technologies](https://github.com/Immersive-Media-Technologies)**.
 
-**macOS and Windows · After Effects 2024–2026 (26.5 verified on both, English and Russian UI) ·
+**macOS and Windows · After Effects 2024–2026 (26.5 verified on both, every UI language) ·
 Node.js 22+ (none needed with the Claude Desktop extension — verified on macOS and on the Windows
 Store build of Claude Desktop).**
 
@@ -178,8 +181,9 @@ There are several After Effects MCP servers; most stop at "the AI can run Extend
 is built around what an **autonomous** agent needs — and what the person handing over a project
 needs: a small stable tool surface (two tools instead of 270), a real dry run, undo-safe
 operations, checkpoints and a project lock, honest errors, an installer that says what is wrong,
-and a skill that teaches the agent the parts of After Effects no API covers. Verified on AE 2026,
-macOS and Windows, English and Russian UI.
+and a skill that teaches the agent the parts of After Effects no API covers — on any UI language
+After Effects ships, where most servers stop at the English one. Verified on AE 2026, macOS and
+Windows.
 
 ## Releases
 
@@ -190,7 +194,7 @@ every change is in [`CHANGELOG.md`](CHANGELOG.md). Upstream fixes are merged fro
 
 - [v1.0.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.0) · 2026-10-28 —
   every After Effects UI language (matchNames, command ids, template names through After Effects'
-  dictionaries; verified live in English and Russian), corrected command list, Apache-2.0.
+  dictionaries; verified live), corrected command list, Apache-2.0.
 - [v0.5.5](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.5) · 2026-10-11 —
   the After Effects skill (`skills/ae`), checkpoints + revert, atomic batches, comp snapshot/diff,
   expression validation, project audit, dialog detection, project lock, frame compare.
