@@ -54,7 +54,7 @@ export const doTool = defineTool({
       .describe(
         "Per-call timeout in milliseconds (default 60000). Raise for long operations like render.start or big batch.run calls.",
       ),
-    // Deep Artisan addition. `dryRun` existed on ae_project_import_json only,
+    // IMT addition. `dryRun` existed on ae_project_import_json only,
     // so `ae_do({ …, dryRun: true })` was silently DROPPED by the schema and
     // the operation executed for real — a caller convinced it was previewing
     // mutated the project instead. Honouring the key here is the fix: the name
@@ -141,7 +141,7 @@ export const doTool = defineTool({
         return { result: _opResult, context: _ctx };
     `;
 
-    // Deep Artisan addition: short-circuit BEFORE the transport, so a dry run
+    // IMT addition: short-circuit BEFORE the transport, so a dry run
     // cannot reach After Effects at all. Placed after validation and after the
     // policy gates on purpose — a preview should still tell the caller that the
     // operation is forbidden or its arguments are wrong.

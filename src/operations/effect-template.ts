@@ -5,7 +5,7 @@
 //   Dakkshin/after-effects-mcp — src/scripts/applyEffectTemplate.jsx
 //   Copyright (c) Dakkshin, MIT License. See THIRD-PARTY-NOTICES.md.
 //
-// Deep Artisan changes vs. the original, and why each was necessary:
+// IMT changes vs. the original, and why each was necessary:
 //
 //   * LOCALE. The original addressed effect properties by English display name
 //     (`effect.property("Shadow Color")`). On a non-English After Effects that

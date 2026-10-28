@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- References to the private client the server came from are gone from README, docs and comments;
+  `docs/AGENT-POLICY.md` is a neutral reference policy.
+
 - **skills/ae is language-independent**: menu items by command id (`ae_do command.execute {id}`, the
   label only as a hint, `ae-menu.sh` as the fallback); the 3D Camera Tracker wait checks for a number in
   the Average Error label (`ADBE 3D Tracker-0311`: "Average Error: -" until solved) instead of the regex

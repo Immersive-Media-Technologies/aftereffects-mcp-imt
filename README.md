@@ -15,8 +15,7 @@ Two parts, made to work together:
   tracking, 3D content on footage, plug-in tests, render, motion graphics, masks), and plug-in
   knowledge files.
 
-By **[Immersive Media Technologies](https://github.com/Immersive-Media-Technologies)** — the After
-Effects layer of our Deep Artisan agent system, released for other agent builders.
+By **[Immersive Media Technologies](https://github.com/Immersive-Media-Technologies)**.
 
 **macOS and Windows · After Effects 2024–2026 (26.5 verified on both, English and Russian UI) ·
 Node.js 22+ (none needed with the Claude Desktop extension — verified on macOS and on the Windows

@@ -1,6 +1,6 @@
 # Agent permission policy — reference
 
-How Deep Artisan gates AE-MCP for an autonomous agent; use it as a template for your own client.
+How to gate AE-MCP for an autonomous agent — a reference policy; use it as a template for your own client.
 
 ## The principle: deny what Cmd+Z cannot revert
 
@@ -30,7 +30,7 @@ tool-level allow-list (`mcp__ae__ae_do`) therefore cannot distinguish `layer.cre
 `project.new`. Parse the arguments: gate on `operation`, and for `batch.run` walk the nested list
 under the key **`ops`** (not `operations`) — a batch wrapper must never be a way around a rule.
 
-Reference implementation (TypeScript, from the Deep Artisan client):
+Reference implementation (TypeScript):
 
 ```ts
 const DENY = new Set([
