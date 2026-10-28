@@ -1,13 +1,13 @@
 ---
 name: ae
-description: Driving Adobe After Effects as an agent through AE-MCP-IMT (ae_catalog / ae_do / ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI workarounds for it, camera tracking, attaching 3D content to tracked footage, testing third-party plugins, rendering, native motion graphics — on localized After Effects in any UI language too. Read at the start of any After Effects task. This file is the router — read the recipe or plugin file it points to, not everything.
+description: Driving Adobe After Effects as an agent through AfterEffects-MCP-IMT (ae_catalog / ae_do / ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI workarounds for it, camera tracking, attaching 3D content to tracked footage, testing third-party plugins, rendering, native motion graphics — on localized After Effects in any UI language too. Read at the start of any After Effects task. This file is the router — read the recipe or plugin file it points to, not everything.
 revision: 4
 updated_at: 2026-10-27
 ---
 
 # After Effects — agent skill (over ae-mcp, not instead of it)
 
-**Rule of the house:** every state read and every change goes through **AE-MCP-IMT** (`ae_catalog` →
+**Rule of the house:** every state read and every change goes through **AfterEffects-MCP-IMT** (`ae_catalog` →
 `ae_do`, `ae_comp_info`, `ae_layer_info`, `ae_render_frame`, `ae_save_project`). This skill adds what
 the server cannot: the order of work, the things only the UI can do and how to do them safely, recipes
 for multi-step jobs, and knowledge about plugins. **No script here duplicates an `ae_do` operation** —

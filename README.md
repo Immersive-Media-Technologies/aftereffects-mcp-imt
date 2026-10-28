@@ -1,6 +1,6 @@
-![AE-MCP-IMT + SKILLS — After Effects for AI agents](https://raw.githubusercontent.com/Immersive-Media-Technologies/aftereffects-mcp-imt/main/assets/banner.jpg)
+![AfterEffects-MCP-IMT + SKILLS — After Effects for AI agents](https://raw.githubusercontent.com/Immersive-Media-Technologies/aftereffects-mcp-imt/main/assets/banner.jpg)
 
-# AE-MCP-IMT + SKILLS — After Effects for AI agents, built to be safe to hand over
+# AfterEffects-MCP-IMT + SKILLS — After Effects for AI agents, built to be safe to hand over
 
 Let an AI assistant (Claude Desktop, Cursor, ChatGPT, Google Antigravity or any MCP client) work
 inside your running **Adobe After Effects**: read the project, build and edit comps, layers,
@@ -17,7 +17,7 @@ Two parts, made to work together:
 
 **Built for localized After Effects, not just English.** Most MCP servers and agent skills for Adobe
 apps assume the English UI — on a German, Japanese or Russian install their effect, template and menu
-names stop matching. AE-MCP-IMT addresses After Effects by its own identifiers (matchNames, command
+names stop matching. AfterEffects-MCP-IMT addresses After Effects by its own identifiers (matchNames, command
 ids) and translates English template names through After Effects' own dictionaries, so the same agent
 and the same skill work on every UI language After Effects ships — verified live.
 
@@ -193,7 +193,7 @@ every change is in [`CHANGELOG.md`](CHANGELOG.md). Upstream fixes are merged fro
 [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic.
 
 - [v1.0.1](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.1) · 2026-10-28 —
-  server name `aftereffects-mcp-imt` like the npm package; the MCP Registry entry also lists the npm package.
+  product name AfterEffects-MCP-IMT (was AE-MCP-IMT); server name `aftereffects-mcp-imt` like the npm package; the MCP Registry entry also lists the npm package.
 - [v1.0.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.0) · 2026-10-28 —
   every After Effects UI language (matchNames, command ids, template names through After Effects'
   dictionaries; verified live), corrected command list, Apache-2.0.
@@ -220,7 +220,7 @@ A note for contributors: the offline transport tests (`npm test`) expect After E
 - Free to use, modify and distribute, commercial use included.
 - **Attribution is required.** Every redistribution of this software or of a work derived from it
   must carry the notice from [`NOTICE`](NOTICE):
-  `AE-MCP-IMT by Immersive Media Technologies — https://github.com/Immersive-Media-Technologies`.
+  `AfterEffects-MCP-IMT by Immersive Media Technologies — https://github.com/Immersive-Media-Technologies`.
 - No warranty.
 
 Third-party notices (upstream MIT code): [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).

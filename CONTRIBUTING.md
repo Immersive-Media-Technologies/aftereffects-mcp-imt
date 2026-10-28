@@ -1,4 +1,4 @@
-# Contributing to AE-MCP-IMT
+# Contributing to AfterEffects-MCP-IMT
 
 Thanks for your interest. This project connects Adobe After Effects to MCP clients (Claude Desktop / Claude Code and any other stdio-capable MCP client) through a TypeScript server that drives AE via file IPC plus a per-platform dispatcher launch (`AfterFX.exe -r` on Windows, `osascript`/DoScript on macOS). Most contributions will touch either the TS tool/operation definitions, the ExtendScript in `jsx/`, or both.
 

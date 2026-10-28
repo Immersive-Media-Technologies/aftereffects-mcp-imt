@@ -1,4 +1,4 @@
-# AE-MCP-IMT - install on Windows (PowerShell 5.1+).
+# AfterEffects-MCP-IMT - install on Windows (PowerShell 5.1+).
 #   .\install.ps1              check -> build -> live self-test -> write client configs (asks first)
 #   .\install.ps1 -Yes         same, without questions
 #   .\install.ps1 -NoConfig    check, build and self-test only; print the config instead
@@ -13,7 +13,7 @@ function Warn($m) { Write-Host " warn  $m" -ForegroundColor Yellow }
 function Bad($m)  { Write-Host " FAIL  $m" -ForegroundColor Red; $script:Fail = $true }
 function Ask($q)  { if ($Yes) { return $true }; $r = Read-Host "$q [y/N]"; return ($r -eq 'y' -or $r -eq 'Y') }
 
-Write-Host "`nAE-MCP-IMT - environment check`n-----------------------------------------------"
+Write-Host "`nAfterEffects-MCP-IMT - environment check`n-----------------------------------------------"
 $AeExe = $null
 if ($env:AE_MCP_EXE -and (Test-Path $env:AE_MCP_EXE)) { $AeExe = $env:AE_MCP_EXE }
 else {

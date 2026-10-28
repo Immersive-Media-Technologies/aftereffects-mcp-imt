@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Product name AfterEffects-MCP-IMT** (was AE-MCP-IMT) in the README, `.mcpb`, MCP Registry title, NOTICE, skill, installers and messages — the Adobe program name is spelled out so search finds it.
 - The server introduces itself to clients as `aftereffects-mcp-imt` (was `mcp-aftereffects`, the upstream name) — the same pattern as the npm package and the other IMT servers.
 - The MCP Registry entry lists the npm package `@immersive-media-technologies/aftereffects-mcp-imt` next to the `.mcpb`.
 
