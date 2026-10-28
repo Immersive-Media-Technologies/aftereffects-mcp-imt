@@ -54,7 +54,10 @@ Work in this order; each step is one `batch.run` where possible (one undo group)
 2. **Controls rig**: one null layer `CONTROLS` at the top (`layer.create_null`) with expression controls
    (`effect.add`: `ADBE Slider Control`, `ADBE Color Control`, `ADBE Checkbox Control`, `ADBE Point Control`)
    — at least _Speed_ (1 = as designed), _Delay_, the palette colours, and switches. Expressions on the
-   elements read them (`thisComp.layer("CONTROLS").effect("Accent")("Color")`). Speed: drive timing with
+   elements read them by the control's own name and the parameter's **index**
+   (`thisComp.layer("CONTROLS").effect("Accent")(1)` — `"Accent"` is the name you gave the effect; its
+   parameter «Color» is a display name AE translates (`Цвет`, `Farbe`), so never `("Color")`/`("Slider")`;
+   the matchName `("ADBE Color Control-0001")` works too). Speed: drive timing with
    `valueAtTime` / time remapping on precomps rather than re-keying.
 3. **Elements**: `layer.create_text` + `text.set_style` (+ `text.add_animator`, `text.add_font_axis`
    for variable fonts — AE 26.2), `layer.create_shape` + `shape.add_*`, `mask.add`, imported footage via

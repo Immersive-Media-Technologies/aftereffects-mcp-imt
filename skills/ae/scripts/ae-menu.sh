@@ -1,6 +1,8 @@
 #!/bin/bash
 # Click a menu item of After Effects by its LOCALIZED names (System Events,
-# needs Accessibility for the calling app).
+# needs Accessibility for the calling app). Fallback only: a menu item with a
+# command id runs on every UI language as `ae_do command.execute {id}` (ids in
+# `command.list`, e.g. Track Camera 3983, Track Motion 2568) — no labels needed.
 #   ae-menu.sh "Анимация" "Отслеживать камеру"
 #   ae-menu.sh "Animation" "Track Camera"
 # Menu clicks are safe (unlike synthetic clicks on panel buttons — use ae-click.js

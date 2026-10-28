@@ -57,6 +57,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **skills/ae is language-independent**: menu items by command id (`ae_do command.execute {id}`, the
+  label only as a hint, `ae-menu.sh` as the fallback); the 3D Camera Tracker wait checks for a number in
+  the Average Error label (`ADBE 3D Tracker-0311`: "Average Error: -" until solved) instead of the regex
+  `'Ср\. ош\.|Average error'`, which only matched Russian — its English half had the wrong case and
+  would also have matched the unsolved label; the tracker camera is found by type (its name is
+  translated in 8 of the 10 languages); expressions address trackers and effect parameters by index or
+  matchName (`("ADBE MTrackers")(1)(1)`, `effect("Accent")(1)`) instead of «Tracker 1» / «Color»;
+  property paths use matchNames. `recipes/render.md` also had wrong `render.set_output` parameter names
+  (`queueItem` / `outPath` → `queueIndex` / `outputPath`).
+
 - **The Claude Desktop extension name carries the version** («AE-MCP-IMT + SKILLS — After Effects for AI agents ·
   v0.5.8»): Claude Desktop does not show the manifest `version`, so an installed bundle could not be told apart
   from the previous one. `build-mcpb.mjs` appends it at pack time; `mcpb/manifest.json` keeps the bare name.

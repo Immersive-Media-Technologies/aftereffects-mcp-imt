@@ -3,7 +3,11 @@
 # of ae_do calls. Runs a status .jsx through DoScript every INTERVAL seconds;
 # the .jsx must write its status line into OUT (ExtendScript File.write);
 # stops when OUT matches REGEX or after TIMEOUT seconds.
-#   ae-wait.sh status.jsx out.txt 'Ср\. ош\.|Average error' 240 8
+#   ae-wait.sh status.jsx out.txt 'SOLVED \|' 240 8
+# Match a token the .jsx itself decides (SOLVED / PENDING from a number or a
+# matchName), never AE's UI text: labels are translated («Ср. ош.» ru,
+# "Average Error" en, «Durchschn. Fehler» de), so a regex over them only works
+# on one UI language (recipes/camera-track.md step 2 has the tracker's status.jsx).
 # Prints each distinct status with a timestamp; exit 0 = matched, 3 = timeout,
 # other = DoScript failed (dialog/menu open → ae-dialogs.sh).
 set -uo pipefail

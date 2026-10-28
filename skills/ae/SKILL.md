@@ -1,8 +1,8 @@
 ---
 name: ae
 description: Driving Adobe After Effects as an agent through AE-MCP-IMT (ae_catalog / ae_do / ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI workarounds for it, camera tracking, attaching 3D content to tracked footage, testing third-party plugins, rendering, native motion graphics. Read at the start of any After Effects task. This file is the router — read the recipe or plugin file it points to, not everything.
-revision: 3
-updated_at: 2026-10-11
+revision: 4
+updated_at: 2026-10-27
 ---
 
 # After Effects — agent skill (over ae-mcp, not instead of it)
@@ -46,7 +46,10 @@ The same work fits in a fraction of that when:
    on a project you did not build, `project.audit` first (missing footage/fonts, expression errors).
    Localized UI (verified on a **Russian** AE): address effects and properties by **matchName**
    (`ADBE 3D Tracker`, `ADBE Slider Control-0001`, `irrealix Gaussian Splatting-0031`), never by display
-   name; menu commands by `command.list` id or `scripts/ae-menu.sh` with localized names.
+   name; menu commands by id (`ae_do command.execute {id}`, ids in `command.list` — the same on every
+   UI language; the menu label is only a hint), `scripts/ae-menu.sh` only for an item without an id;
+   render templates by the name `render.list_templates` gives (the built-in ones also by English name);
+   wait on numbers or matchNames, never on UI text (`scripts/ae-wait.sh`).
 2. **Save before anything irreversible** — `project.checkpoint {label}` (saves + keeps a copy that
    survives a crash or relaunch; `project.revert {id}` brings it back) before a multi-step change,
    before `project.open/new`, before any UI-only step that can crash AE (§2); `project.save_increment`
@@ -64,11 +67,11 @@ The same work fits in a fraction of that when:
 
 | UI-only step | Why | Workaround (verified = ✓, plausible = ?) |
 |---|---|---|
-| **Start 3D Camera Tracker analysis** | `Effects.addProperty("ADBE 3D Tracker")` adds the effect but never analyses | ✓ select the footage layer (`timeline.select_layers`) → `scripts/ae-menu.sh "Анимация" "Отслеживать камеру"` (`"Animation" "Track Camera"`) → `scripts/ae-wait.sh` on the status property → `recipes/camera-track.md` |
+| **Start 3D Camera Tracker analysis** | `Effects.addProperty("ADBE 3D Tracker")` adds the effect but never analyses | select the footage layer (`timeline.select_layers`) → `ae_do command.execute {id: 3983}` (Animation › Track Camera, «Анимация › Отслеживать камеру»; ? — the ✓ path of 11.10 was the menu click, `scripts/ae-menu.sh`, kept as the fallback) → `scripts/ae-wait.sh` until the Average Error label carries a number → `recipes/camera-track.md` |
 | **«Create Camera» button** of the tracker, **«Set Ground Plane and Origin»** | buttons in the Effect Controls panel / context menu of the viewer | ✓ real mouse events `scripts/ae-click.js` (CGEvent). **Never** System Events `click` on AE panel buttons — it crashed AE 26.5 ("no current context" → fatal) |
 | Selecting tracker points, dragging in the viewer | viewer interaction | ✓ `ae-click.js click` on a point between solved points selects the triangle; shift-click adds; marquee drag did **not** select |
 | Plugin buttons (irrealix «Generate 3D Null», Register…) | custom UI in the effect | ✓ expressions / property writes achieve the same where possible (`plugins/irrealix-gaussian-splatting.md`); else `ae-click.js` |
-| Roto Brush / Object Matte propagation, Content-Aware Fill, Warp Stabilizer analysis | background analysis, UI-driven | ? apply with `effect.add`, start via menu (`ae-menu.sh`), poll with `ae-wait.sh`; the user may need to paint the first stroke |
+| Roto Brush / Object Matte propagation, Content-Aware Fill, Warp Stabilizer analysis | background analysis, UI-driven | ? apply with `effect.add` or by command id (`command.execute`: Warp Stabilizer VFX 3986, Track Mask 10311 — `command.list`), a menu item without an id via `ae-menu.sh`, poll with `ae-wait.sh`; the user may need to paint the first stroke |
 | Mocha AE | separate app | → `recipes/tracking-mocha.md` (what to script, what the user does) |
 | Dialogs («Save changes?», tutorial tips, crash dialogs) | modal — blocks DoScript; a timed-out call comes back as **`DIALOG_OPEN`** with the dialog text | ✓ `ae_dialogs {action:"list"}` / `{action:"dismiss", id}` (cancel action — a question is never answered for the user); the OK-only tutorial tip: `scripts/ae-dialogs.sh close`; an open **menu** blocks DoScript with `-1712` until `ae-dialogs.sh escape` |
 | AE not responding, `-1719` from System Events | process gone (crashed) | ✓ relaunch with the saved project: `open -a "Adobe After Effects 2026" <project.aep>`; wait for `ae_version_info` to answer; then `ae-dialogs.sh close` for the recovery dialogs |
@@ -110,9 +113,9 @@ Read the file **before** touching the plugin; write a new one after a test.
 |---|---|
 | `scripts/ae-click.js move\|click\|dblclick\|rclick X Y [shift]`, `drag X1 Y1 X2 Y2` | hardware-level mouse events (CGEvent) |
 | `scripts/ae-windows.js [displays]` | AE windows (flags a Stage Manager thumbnail), frontmost app, displays with bounds in points |
-| `scripts/ae-menu.sh <menu> <item> [sub]` | click a menu item by localized names |
+| `scripts/ae-menu.sh <menu> <item> [sub]` | click a menu item by its labels in this AE's UI language — only for an item without a command id (`command.execute {id}` first) |
 | `scripts/ae-dialogs.sh list\|close [N]\|escape\|front\|menus <menu>` | menus, focus, Return on an OK-only tip (dialogs themselves: `ae_dialogs`) |
-| `scripts/ae-wait.sh status.jsx out.txt REGEX [timeout] [interval]` | poll a status file written by a .jsx until it matches |
+| `scripts/ae-wait.sh status.jsx out.txt REGEX [timeout] [interval]` | poll a status file written by a .jsx until it matches (a token the .jsx decides — SOLVED/PENDING — not UI text) |
 | `scripts/ae-shot.sh out [X Y W H [D]]` | screenshot of display D, optionally cropped |
 | `scripts/frame-strip.py` | glue check frames / contact sheet of a video into one image |
 | `scripts/measure-slide.py` | does an inserted object slide on the plate — measured in px, not eyeballed |
