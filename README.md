@@ -56,13 +56,13 @@ You need After Effects running on this computer and two permissions:
 - **Scripting file access:** After Effects → Settings → Scripting & Expressions → _Allow Scripts to
   Write Files and Access Network_.
 
-| Client                                                                                                                                  | How                                                                                                                                                                                                                                                                                                                                |
-| --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="https://www.google.com/s2/favicons?domain=claude.ai&sz=32" width="16" height="16" alt=""> **Claude Desktop**                  | download [`aftereffects-mcp-imt.mcpb`](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/latest/download/aftereffects-mcp-imt.mcpb), double-click, **Install** (Windows: drag it onto Settings → Extensions). No Node needed.                                                                          |
-| <img src="https://www.google.com/s2/favicons?domain=cursor.com&sz=32" width="16" height="16" alt=""> **Cursor**                         | <a href="https://cursor.com/en/install-mcp?name=aftereffects&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBpbW1lcnNpdmUtbWVkaWEtdGVjaG5vbG9naWVzL2FmdGVyZWZmZWN0cy1tY3AtaW10Il0sImVudiI6eyJNQ1BfVElNRU9VVCI6IjEyMDAwMCJ9fQ=="><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add to Cursor" height="20"></a> |
-| <img src="https://www.google.com/s2/favicons?domain=antigravity.google&sz=32" width="16" height="16" alt=""> **Google Antigravity**     | Settings → Customizations → Installed MCP Servers → **View raw config** → add the snippet below.                                                                                                                                                                                                                                   |
-| <img src="https://www.google.com/s2/favicons?domain=chatgpt.com&sz=32" width="16" height="16" alt=""> **ChatGPT** (remote servers only) | on the After Effects machine: `npx -p @immersive-media-technologies/aftereffects-mcp-imt aftereffects-mcp-imt-chatgpt` — it starts the server behind a tunnel and prints the URL to paste into ChatGPT.                                                                                                                            |
-| **Any MCP client**                                                                                                                      | the snippet below in its `mcpServers`.                                                                                                                                                                                                                                                                                             |
+| Client                                                                                             | How                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![](https://www.google.com/s2/favicons?domain=claude.ai&sz=16) **Claude Desktop**                  | download [`aftereffects-mcp-imt.mcpb`](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/latest/download/aftereffects-mcp-imt.mcpb), double-click, **Install** (Windows: drag it onto Settings → Extensions). No Node needed.                                                                                     |
+| ![](https://www.google.com/s2/favicons?domain=cursor.com&sz=16) **Cursor**                         | [![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=aftereffects&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBpbW1lcnNpdmUtbWVkaWEtdGVjaG5vbG9naWVzL2FmdGVyZWZmZWN0cy1tY3AtaW10Il0sImVudiI6eyJNQ1BfVElNRU9VVCI6IjEyMDAwMCJ9fQ==) — one click: Cursor opens and writes the config |
+| ![](https://www.google.com/s2/favicons?domain=antigravity.google&sz=16) **Google Antigravity**     | Settings → Customizations → Installed MCP Servers → **View raw config** → add the snippet below.                                                                                                                                                                                                                                              |
+| ![](https://www.google.com/s2/favicons?domain=chatgpt.com&sz=16) **ChatGPT** (remote servers only) | on the After Effects machine: `npx -p @immersive-media-technologies/aftereffects-mcp-imt aftereffects-mcp-imt-chatgpt` — it starts the server behind a tunnel and prints the URL to paste into ChatGPT.                                                                                                                                       |
+| **Any MCP client**                                                                                 | the snippet below in its `mcpServers`.                                                                                                                                                                                                                                                                                                        |
 
 ```json
 {
@@ -87,8 +87,7 @@ The installer checks After Effects and Node, builds, pings the running AE, names
 (−1743, scripting access, Node path) and — after asking — writes the entry into Claude Desktop's,
 Cursor's and Antigravity's configs, backing them up.
 
-<details>
-<summary>If something does not connect</summary>
+**If something does not connect**
 
 - `spawn npx ENOENT` on macOS: GUI apps do not see your shell `PATH` — put the absolute path of a
   Node from Homebrew or nodejs.org in place of `npx` (nvm's Node is invisible to them).
@@ -103,8 +102,7 @@ Cursor's and Antigravity's configs, backing them up.
   Node (verified with the Microsoft Store build on Windows 11 ARM). Server log:
   `%LOCALAPPDATA%\Claude\logs\mcp-server-<name>.log`; mailbox: `%TEMP%\mcp-aftereffects`.
 - If your client caps tool output, raise it to 50 000 — `ae_project_info` on a real project is
-bigger than the usual 25 000.
-</details>
+  bigger than the usual 25 000.
 
 ## How it stays safe
 
