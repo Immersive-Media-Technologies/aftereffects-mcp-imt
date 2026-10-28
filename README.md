@@ -9,7 +9,10 @@ effects, keyframes, text, masks and expressions, render check frames — from pl
 Two parts, made to work together:
 
 - **The MCP server** — ~270 small, safe operations behind two tools, with a dry run, one undo
-  group per call, checkpoints, a project lock and honest errors.
+  group per call, checkpoints, a project lock and honest errors. **Works on every After Effects UI
+  language** (all ten): properties by matchName, menu commands by id, render and output templates
+  by their English name translated through After Effects' own dictionaries — verified live in
+  English and Russian.
 - **The skill** (`skills/ae`) — what the agent should _know_: the order of work, what a script
   cannot do in After Effects and how to get around it safely, step-by-step recipes (camera
   tracking, 3D content on footage, plug-in tests, render, motion graphics, masks), and plug-in
@@ -185,6 +188,9 @@ Each version is described on the
 every change is in [`CHANGELOG.md`](CHANGELOG.md). Upstream fixes are merged from
 [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic.
 
+- [v1.0.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.0) · 2026-10-28 —
+  every After Effects UI language (matchNames, command ids, template names through After Effects'
+  dictionaries; verified live in English and Russian), corrected command list, Apache-2.0.
 - [v0.5.5](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.5) · 2026-10-11 —
   the After Effects skill (`skills/ae`), checkpoints + revert, atomic batches, comp snapshot/diff,
   expression validation, project audit, dialog detection, project lock, frame compare.
@@ -203,13 +209,12 @@ A note for contributors: the offline transport tests (`npm test`) expect After E
 
 ## License
 
-**[IMT Non-Commercial License](LICENSE)** — © Immersive Media Technologies.
+**[Apache License 2.0](LICENSE)** — © Immersive Media Technologies.
 
-- **Non-commercial use only.** Selling this software, offering it as or inside a paid product or
-  service, or using it in commercial client work requires a separate written license.
-- **Attribution is mandatory.** Every use, copy, fork or derived product must credit the creator,
-  visibly to its users: `AE-MCP-IMT by Immersive Media Technologies — https://github.com/Immersive-Media-Technologies`.
+- Free to use, modify and distribute, commercial use included.
+- **Attribution is required.** Every redistribution of this software or of a work derived from it
+  must carry the notice from [`NOTICE`](NOTICE):
+  `AE-MCP-IMT by Immersive Media Technologies — https://github.com/Immersive-Media-Technologies`.
 - No warranty.
 
-Full terms: [`LICENSE`](LICENSE). Third-party notices (upstream MIT code, vendored skill sets):
-[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+Third-party notices (upstream MIT code): [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).

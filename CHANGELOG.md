@@ -5,10 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-28
 
 ### Fixed
 
+- The E2E probe looks for the After Effects executable itself (`pgrep -x "After Effects"`): matching the
+  command line also hit helper processes that outlive a quit, and the suite then booted After Effects.
 - **The server behaved differently depending on the After Effects UI language.** Everything below was
   checked offline against AE 26.5's own string tables (English in its binaries, de, es, fr, it, ja, ko,
   pt-BR, ru, zh-CN in `Dictionaries/`); nothing that worked on a Russian AE stops working.
@@ -57,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- License: **Apache-2.0** (was the IMT Non-Commercial License); attribution through `NOTICE`. Upstream MIT
+  notices stay in `THIRD-PARTY-NOTICES.md`.
+- README, `.mcpb` manifest and registry description state the UI-language independence.
 - References to the private client the server came from are gone from README, docs and comments;
   `docs/AGENT-POLICY.md` is a neutral reference policy.
 
@@ -439,6 +444,7 @@ Initial public release of `@kumoproductions/mcp-aftereffects`.
 
 - Importing a project whose footage is missing can misattribute layer parenting.
 
+[0.6.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.6.0
 [0.5.8]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.8
 [0.5.7]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.7
 [0.5.5]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.5

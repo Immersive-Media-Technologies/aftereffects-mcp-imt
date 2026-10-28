@@ -3,8 +3,8 @@
 AE-MCP-IMT by Immersive Media Technologies incorporates code from the projects
 below. Both are distributed by their authors under the MIT License, which
 requires that the copyright notice and permission notice be retained; they are
-reproduced here. The combined work is licensed under the IMT Non-Commercial
-License (see LICENSE).
+reproduced here. The combined work is licensed under the Apache License 2.0
+(see LICENSE).
 
 ---
 

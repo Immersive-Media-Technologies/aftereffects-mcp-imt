@@ -59,9 +59,10 @@ function printAeUnreachableBanner(suite: string, reason: string): void {
 async function isAfterFxRunning(): Promise<boolean> {
   try {
     if (process.platform === "darwin") {
-      // -f matches the full command line, so this finds AE regardless of the
-      // bundle's executable name (the .app path contains "Adobe After Effects").
-      await execAsync('pgrep -f "Adobe After Effects"');
+      // The main executable only: a command-line match on "Adobe After Effects"
+      // also hit AE's helper processes (crashpad_handler, CEPHtmlEngine) that
+      // outlive a quit by seconds — the probe then BOOTED After Effects.
+      await execAsync('pgrep -x "After Effects"');
       return true;
     }
     const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq AfterFX.exe" /NH');
