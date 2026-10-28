@@ -1,14 +1,14 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Immersive-Media-Technologies/aftereffects-mcp-imt",
-  "title": "AfterEffects-MCP-IMT — After Effects for AI agents",
-  "description": "Adobe After Effects for AI agents on any UI language: ~270 undo-safe operations, checkpoints, skill",
+  "title": "AfterEffects-MCP-IMT + SKILLS — After Effects for AI agents",
+  "description": "After Effects for AI agents: every Adobe UI language, large skills library, generative workflows",
   "repository": {
     "url": "https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt",
     "source": "github"
   },
   "websiteUrl": "https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt#readme",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/Immersive-Media-Technologies/aftereffects-mcp-imt/main/mcpb/icon.png",
@@ -21,15 +21,15 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@immersive-media-technologies/aftereffects-mcp-imt",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/download/v1.0.1/aftereffects-mcp-imt-1.0.1.mcpb",
-      "fileSha256": "aefb14116595d696bd240682354c0f1775f2ba13ee132d6998437c4c51a62e39",
+      "identifier": "https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/download/v1.0.2/aftereffects-mcp-imt-1.0.2.mcpb",
+      "fileSha256": "a7096e3d696274267bb40f428578893a8ac6afb9a36b9cae28ba43cc2ae645b9",
       "transport": {
         "type": "stdio"
       }

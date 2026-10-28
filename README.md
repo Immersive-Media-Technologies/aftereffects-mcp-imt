@@ -6,6 +6,8 @@ Let an AI assistant (Claude Desktop, Cursor, ChatGPT, Google Antigravity or any 
 inside your running **Adobe After Effects**: read the project, build and edit comps, layers,
 effects, keyframes, text, masks and expressions, render check frames — from plain language.
 
+**Every Adobe UI language · a large skills library · built for AI and generative features.** AfterEffects-MCP-IMT works with every UI language Adobe ships, comes with a large skills library and is built for Adobe's AI and generative features — Roto Brush and Object Matte, Content-Aware Fill, generated image sources animated as native layers.
+
 Two parts, made to work together:
 
 - **The MCP server** — ~270 small, safe operations behind two tools, with a dry run, one undo
@@ -192,6 +194,8 @@ Each version is described on the
 every change is in [`CHANGELOG.md`](CHANGELOG.md). Upstream fixes are merged from
 [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic.
 
+- [v1.0.2](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.2) · 2026-10-28 —
+  descriptions everywhere: every Adobe UI language, a large skills library, built for Adobe's generative features.
 - [v1.0.1](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.1) · 2026-10-28 —
   product name AfterEffects-MCP-IMT (was AE-MCP-IMT); server name `aftereffects-mcp-imt` like the npm package; the MCP Registry entry also lists the npm package.
 - [v1.0.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.0) · 2026-10-28 —
