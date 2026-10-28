@@ -202,6 +202,13 @@ async function nativeFlow(
         var comp = AE.findCompByNameOrId(_arg);
         if (!comp) return { ok: false, error: "no comp matching " + String(_arg) };
         var _ws = AE.safeGet(function () { return app.project.workingSpace; }, "None");
+        // No color management is "None" in the scripting API, but the working-space menu shows it in the
+        // UI language («Нет», «Ohne», …). If AE hands back that menu label, it still means "None" — compared
+        // through localize() of AE's own ZString for it, so every UI language is covered.
+        try {
+            if (typeof localize === "function"
+                && _ws === String(localize("$$$/AE/EGG/Edit/ProjectColorSettings/RGBWorkingSpacePopup/None=None"))) _ws = "None";
+        } catch (eWsNone) { }
         var _t = ${jsxVal(args.time)};
         if (${jsxVal(!!args.useDisplayStartTime)}) _t = _t + comp.displayStartTime;
         var _useOcio = ${jsxVal(tryOcio)} && _ws !== "None" && _ws !== "";

@@ -71,6 +71,11 @@ export function jsxReportedFailure(result: unknown): { error: string } | null {
 export function toMcpResult(result: EvalResult): ToolResult {
   if (!result.ok) {
     return errorResult(result.errorCode ?? "TRANSPORT", result.error ?? "unknown failure", {
+      // ExtendScript's error number: the language-independent way to tell one
+      // failure from another (the message of an After Effects error is localized).
+      ...(typeof result.errorNumber === "number"
+        ? { details: { errorNumber: result.errorNumber } }
+        : {}),
       stack: result.stack,
       logs: result.logs,
       durationMs: result.durationMs,

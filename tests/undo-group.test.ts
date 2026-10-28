@@ -37,7 +37,7 @@ describe("operations that drive the undo stack", () => {
     expect(wantsUndoGroup(op, { id: 16 })).toBe(false);
     expect(wantsUndoGroup(op, { id: 2035 })).toBe(false);
     // Deselect All — an ordinary menu command, still one Ctrl+Z per call.
-    expect(wantsUndoGroup(op, { id: 2040 })).toBe(true);
+    expect(wantsUndoGroup(op, { id: 2004 })).toBe(true);
   });
 
   it("leaves every other operation grouped", () => {
@@ -63,7 +63,7 @@ describe("ae_do", () => {
     expect(undo.calls[0].undoGroup).toBe(false);
 
     const deselect = nullTransport(OK_RESPONSE);
-    await doTool.handler({ operation: "command.execute", args: { id: 2040 } }, deselect);
+    await doTool.handler({ operation: "command.execute", args: { id: 2004 } }, deselect);
     expect(deselect.calls[0].undoGroup).toBe(true);
   });
 
@@ -80,7 +80,7 @@ describe("dialog suppression", () => {
     const cmd = getOp("command.execute")!;
     expect(wantsDialogSuppression(cmd, { id: 16 })).toBe(false);
     expect(wantsDialogSuppression(cmd, { id: 2035 })).toBe(false);
-    expect(wantsDialogSuppression(cmd, { id: 2040 })).toBe(true);
+    expect(wantsDialogSuppression(cmd, { id: 2004 })).toBe(true);
     // project.open / project.new run ungrouped, but they are the calls most
     // likely to pop a modal (missing footage/fonts) — they stay suppressed.
     for (const name of ["project.open", "project.new", "layer.create_null"]) {
@@ -127,9 +127,9 @@ describe("batch.run", () => {
     expect(undo).not.toContain("executeCommand(2035)");
 
     const deselect = getOp("batch.run")!.toJsx({
-      ops: [{ operation: "command.execute", args: { id: 2040 } }],
+      ops: [{ operation: "command.execute", args: { id: 2004 } }],
     });
-    expect(deselect).toContain("executeCommand(2040)");
+    expect(deselect).toContain("executeCommand(2004)");
   });
 });
 

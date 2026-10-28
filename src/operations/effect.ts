@@ -102,7 +102,7 @@ registerOp({
   name: "effect.set_property",
   category: "effect",
   description:
-    "Set a property value on an effect. Property path is relative to the effect (e.g. ['Blurriness'] for Gaussian Blur).",
+    "Set a property value on an effect. Property path is relative to the effect: a 1-based index ([1] = Blurriness of Gaussian Blur) or the matchName (['ADBE Gaussian Blur 2-0001']) work on every UI language — effect.list_on_layer lists both; the display name (['Blurriness']) resolves only on an English After Effects.",
   params: [
     { name: "comp", type: "any", description: "Comp name or id", required: true },
     {

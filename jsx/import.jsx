@@ -195,7 +195,7 @@ AE.importProject = function (doc, opts) {
                 }
                 // Apply transform properties
                 if (lspec.transformGroup) {
-                    AE.applyPropertyGroup(newLayer.property("Transform"), lspec.transformGroup, warn);
+                    AE.applyPropertyGroup(newLayer.property("ADBE Transform Group"), lspec.transformGroup, warn);
                 }
                 // Apply effects (create each effect by matchName, then fill values)
                 if (lspec.effectsGroup && lspec.effectsGroup.groups) {
@@ -232,7 +232,7 @@ AE.importProject = function (doc, opts) {
                 // Shape layer contents — recursively recreate shape groups
                 if (lspec.contentsGroup && newLayer instanceof ShapeLayer) {
                     try {
-                        var contentsRoot = newLayer.property("Contents");
+                        var contentsRoot = newLayer.property("ADBE Root Vectors Group");
                         AE.importShapeContents(contentsRoot, lspec.contentsGroup, warn);
                     } catch (eShape) {
                         warn("shape contents import failed for '" + lspec.name + "': " + AE.errText(eShape));
@@ -252,13 +252,13 @@ AE.importProject = function (doc, opts) {
                 // Material Options (3D layers)
                 if (lspec.materialOptionsGroup && newLayer instanceof AVLayer && newLayer.threeDLayer) {
                     try {
-                        AE.applyPropertyGroup(newLayer.property("Material Options"), lspec.materialOptionsGroup, warn);
+                        AE.applyPropertyGroup(newLayer.property("ADBE Material Options Group"), lspec.materialOptionsGroup, warn);
                     } catch (eMat) { /* ignore */ }
                 }
                 // Audio
                 if (lspec.audioGroup && newLayer instanceof AVLayer) {
                     try {
-                        AE.applyPropertyGroup(newLayer.property("Audio"), lspec.audioGroup, warn);
+                        AE.applyPropertyGroup(newLayer.property("ADBE Audio Group"), lspec.audioGroup, warn);
                     } catch (eAud) { /* ignore */ }
                 }
                 // Layer markers

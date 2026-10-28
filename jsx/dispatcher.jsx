@@ -95,9 +95,27 @@
                 if (undecoded) msg += " [hint: the code reached ExtendScript with its escapes undecoded (\\n as two characters)"
                     + " - a foreign JSON.parse in the shared engine; ae-mcp >= 0.5.8 parses with its own]";
             }
-            // ExtendScript throws «Invalid numeric result (divide by zero?)» when an ARRAY property value
-            // (Position, Scale, Anchor Point, a Color) is concatenated into a string ("pos=" + p.value).
-            if (new RegExp("Invalid numeric result|\u043d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u0447\u0438\u0441\u043b\u043e\u0432\u043e\u0439", "i").test(msg)) {
+            // «Invalid numeric result (divide by zero?)» is thrown when an ARRAY property value (Position, Scale,
+            // Anchor Point, a Color) is concatenated into a string ("pos=" + p.value). It is After Effects' own
+            // error (ZString $$$/AE/BEE/LStr/0392), not one of ExtendScript's numbered core errors (e.number
+            // 2-79, whose messages are English on every UI language), and AE translates it - so it is recognised
+            // by the text AE itself uses for it in THIS UI language (localize() of that ZString), and by its
+            // spelling in the ten languages AE ships as the fallback (a host without localize(), e.g. the tests).
+            var invalidNumeric = false;
+            try {
+                if (typeof localize === "function") {
+                    var own = String(localize("$$$/AE/BEE/LStr/0392=invalid numeric result (divide by zero?)"));
+                    own = own.split("(")[0].split("\uff08")[0].split(".")[0].replace(/^\s+|\s+$/g, "").toLowerCase();
+                    if (own.length >= 4 && msg.toLowerCase().indexOf(own) !== -1) invalidNumeric = true;
+                }
+            } catch (eLoc) { /* no localize() here - the fallback below decides */ }
+            if (!invalidNumeric && new RegExp("invalid numeric result|Ung\u00fcltiges numerisches Ergebnis|resultado num\u00e9rico no v\u00e1lido"
+                + "|r\u00e9sultat num\u00e9rique incorrect|risultato numerico non valido|\u6570\u5024\u7d50\u679c\u304c\u7121\u52b9\u3067\u3059"
+                + "|\uc798\ubabb\ub41c \uc22b\uc790 \uacb0\uacfc\uc785\ub2c8\ub2e4|resultado num\u00e9rico inv\u00e1lido"
+                + "|\u043d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u0447\u0438\u0441\u043b\u043e\u0432\u043e\u0439|\u6570\u5b57\u7ed3\u679c\u65e0\u6548", "i").test(msg)) {
+                invalidNumeric = true;
+            }
+            if (invalidNumeric) {
                 msg += " [hint: an array value (position/scale/anchor/color) was concatenated into a string -"
                     + " ExtendScript throws here; use value.join(',') or JSON.stringify(value)]";
             }
@@ -111,6 +129,19 @@
         try {
             return (e && e.stack) ? String(e.stack) : null;
         } catch (eSt) {
+            return null;
+        }
+    }
+
+    // ExtendScript's error number (e.number) travels next to the message: unlike the text of an After
+    // Effects error it does not depend on the UI language. ScCore's own table: 2 "is undefined",
+    // 8 "Syntax error", 21 "is not an object", 24 "is not a function", 25 "Expected", 45 "Object is
+    // invalid", 48 "File or folder does not exist", 55 "Object does not support the property or method".
+    function errNumber(e) {
+        try {
+            var n = (e !== null && typeof e === "object") ? e.number : undefined;
+            return (typeof n === "number" && !isNaN(n)) ? n : null;
+        } catch (eNum) {
             return null;
         }
     }
@@ -284,6 +315,7 @@
             phase: "dispatch",
             result: null,
             error: null,
+            errorNumber: null,
             stack: null,
             logs: []
         };
@@ -485,6 +517,7 @@
         } catch (eExec) {
             response.ok = false;
             response.error = describeError(eExec);
+            response.errorNumber = errNumber(eExec);
             response.stack = errStack(eExec);
         } finally {
             if (jsonSwapped) {

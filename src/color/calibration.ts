@@ -91,7 +91,7 @@ export async function measureCaptureTransfer(
                 var _v = _vals[_i];
                 var _s = _tmp.layers.addSolid([_v, _v, _v], "c" + _i, _patch, _patch, 1);
                 if (_s.source) _srcs.push(_s.source);
-                _s.property("Transform").property("Position").setValue([_patch * _i + _patch / 2, _patch / 2]);
+                _s.property("ADBE Transform Group").property("ADBE Position").setValue([_patch * _i + _patch / 2, _patch / 2]);
             }
             _tmp.saveFrameToPng(0, new File(${jsxVal(pngPath)}));
             _out.saved = true;

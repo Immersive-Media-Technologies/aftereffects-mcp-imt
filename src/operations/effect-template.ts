@@ -13,15 +13,20 @@
 //     into `$.writeln` — so on a ru_RU / ja_JP install every template applied
 //     its effects with untouched factory defaults and still reported success.
 //     Verified against AE 26.3 ru_RU: all five Drop Shadow properties missed.
-//     Settings are therefore keyed by 1-based property INDEX, which is stable
-//     across locales, with the English name kept for documentation and tried
-//     first as a fast path.
+//     Settings are therefore addressed by 1-based property INDEX, which is the
+//     same on every UI language, and the index is tried FIRST, so every AE
+//     resolves the same property. The English name is documentation, the key
+//     of `settings` overrides, and a fallback only for an index that does not
+//     resolve (which only an English AE can rescue).
 //   * MATCHNAMES. Two of the original's effects do not exist in After Effects:
 //     "ADBE Directional Blur" (real: "ADBE Motion Blur") and "ADBE Glow"
 //     (real: "ADBE Glo2"). Checked against the live 446-effect catalogue of
 //     AE 26.3 — both templates were dead on arrival upstream.
-//   * The effect group is reached via matchName "ADBE Effect Parade" rather
-//     than the locale-dependent `layer.Effects` accessor.
+//   * The effect group is reached via its matchName "ADBE Effect Parade", the
+//     canonical address. (The English name "Effects" is on Adobe's list of
+//     names accessible by name and resolves on a localized AE too — the rest
+//     of the server uses it — so this is consistency, not a locale fix; the
+//     locale fix is the property index above.)
 //   * Per-effect failures are reported to the caller in `warnings` instead of
 //     being swallowed; a missing plug-in fails the call loudly.
 //   * Overrides are merged per effect, on the Node side, and go through
@@ -36,7 +41,10 @@ interface TemplateSetting {
    * therefore the authoritative address.
    */
   index: number;
-  /** English display name — documentation, and the fast path on en_US. */
+  /**
+   * English display name — documentation, the key of `settings` overrides, and
+   * a fallback only when the index does not resolve (only an English AE matches it).
+   */
   name: string;
   value: unknown;
 }
@@ -226,8 +234,8 @@ registerOp({
 
     return `
             ${jsxCompLayerPreamble(args)}
-            // matchName, not the localised display name: on a ru_RU / ja_JP
-            // build "Effects" is not what the group is called in the UI.
+            // The effect group by its matchName — the canonical address (see the
+            // header: "Effects" would resolve on every UI language as well).
             var _fxRoot = _layer.property("ADBE Effect Parade");
             if (!_fxRoot) return { ok: false, error: "layer '" + _layer.name + "' has no Effects group (is it a camera or a light?)" };
             var _plan = ${jsxVal(plan)};
@@ -244,13 +252,14 @@ registerOp({
                 var _set = [];
                 for (var _j = 0; _j < _step.settings.length; _j++) {
                     var _s = _step.settings[_j];
-                    // Fast path: the English name, which resolves on an en_US
-                    // build. Authoritative path: the 1-based index, which
-                    // resolves everywhere. Never trust the name alone.
+                    // Authoritative: the 1-based index, which is the same on
+                    // every UI language — tried first, so an English and a
+                    // localized AE set the same property. The English name is
+                    // only a fallback for an index that does not resolve.
                     var _prop = null;
-                    try { _prop = _fx.property(_s.name); } catch (eByName) {}
+                    try { _prop = _fx.property(_s.index); } catch (eByIdx) {}
                     if (!_prop) {
-                        try { _prop = _fx.property(_s.index); } catch (eByIdx) {}
+                        try { _prop = _fx.property(_s.name); } catch (eByName) {}
                     }
                     if (!_prop) {
                         _warnings.push(_step.matchName + ": no property '" + _s.name + "' (index " + _s.index + ")");

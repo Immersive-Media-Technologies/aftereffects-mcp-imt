@@ -9,12 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The server behaved differently depending on the After Effects UI language.** Everything below was
+  checked offline against AE 26.5's own string tables (English in its binaries, de, es, fr, it, ja, ko,
+  pt-BR, ru, zh-CN in `Dictionaries/`); nothing that worked on a Russian AE stops working.
+  - **Render templates.** Their names are localized (a Russian AE lists «Оптимальные настройки», not
+    "Best Settings"), and an unknown `renderTemplate` / `outputTemplate` of `render.set_output` only
+    produced a warning while the item rendered with the template it already had. Both names are now
+    checked before anything changes; a name this AE does not have fails the call and lists the available
+    ones. The built-in templates (5 render settings, 11 output modules) also resolve from their English
+    name, or their name in any of the ten languages, to the one this AE lists — through `localize()` of
+    AE's own ZString first, then a table read from AE 26.5. A resolved alias is named in `warnings`; the
+    result reports `renderTemplate` / `outputTemplate`.
+  - **Display names AE translates.** Shape operations, project export/import, `ae_layer_info` and the
+    capture calibration reached groups by "Contents", "Transform", "Material Options" and "Audio",
+    which are not on Adobe's list of names accessible by name. They now use matchNames
+    (`ADBE Root Vectors Group` / `ADBE Vectors Group`, `ADBE Transform Group`,
+    `ADBE Material Options Group`, `ADBE Audio Group`). A test keeps them out of `src/` and `jsx/`.
+  - **`command.list` gave wrong ids for most entries** — the list agents use instead of localized menu
+    labels: 2040 is the Layer › Mask submenu (Deselect All is 2004), 2072 is Effect › Remove All (not
+    "Move All Attributes"), 2157 is Add Marker, 2028 is not New Null Object (2767). It is rebuilt from the
+    ids AE itself attaches to its menu strings (`$$$/AE/MenuID/<menu>/<Name>_<id>`), and gains Track
+    Camera (3983), Track Motion (2568), Warp Stabilizer VFX (3986) and Track Mask (10311).
+  - **The «Invalid numeric result» hint** (an array value concatenated into a string) matched only the
+    English and Russian text. The error is After Effects' own (`$$$/AE/BEE/LStr/0392`), not an
+    ExtendScript error code, so it is now recognised by AE's text for it in the running UI language
+    (`localize()`), with its spelling in all ten languages as the fallback.
+  - **`effect.apply_template`** tried the English property name before the index although its own
+    comment called the index authoritative; the index now comes first (the same property on every UI
+    language) and the name is only a fallback. The comment that called `"Effects"` locale-dependent is
+    corrected — it is on Adobe's list; the matchName is kept as the canonical address.
+  - **`ae_render_frame`**: a working space reported under the localized label of "None" («Нет», «Ohne»,
+    …) counts as no color management.
+
 - **The offline transport suite drove a real After Effects on macOS.** Its stand-in executable was `/bin/true`, which
   macOS does not have (`/usr/bin/true`); `resolveAfterFxPath` fell through to the installed AE, so every `npm test`
   booted it, left `osascript` processes blocked for two hours, and let the AE-gated e2e suite probe the instance it
   had just launched. With the path fixed instead, `osascript` could not address a non-bundle path and every timeout
   test failed as TRANSPORT. On macOS a path with no `.app` bundle (a wrapper script, a test stand-in) is now spawned
   directly — AppleScript can only address bundles — and the suite fails loudly if its stand-in is missing.
+
+### Added
+
+- **`error.details.errorNumber`** on a `JSX_THROW`: ExtendScript's `e.number` (2 "is undefined",
+  8 "Syntax error", 21 "is not an object", 24 "is not a function", 25 "Expected", 45 "Object is
+  invalid", 48 "File or folder does not exist", 55 "Object does not support the property or method") —
+  classify a failure by it; After Effects' own messages are translated.
 
 ### Changed
 

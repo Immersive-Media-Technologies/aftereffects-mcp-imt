@@ -5,10 +5,15 @@ import { registerOp, jsxVal, jsxCompLayerPreamble } from "../registry.js";
 /**
  * Shape-group lookup preamble (defines `_grp` from args.groupIndex).
  * Must follow jsxCompLayerPreamble, which defines `_layer`.
+ *
+ * Every Contents group is reached by matchName — "ADBE Root Vectors Group" on
+ * the layer, "ADBE Vectors Group" inside a Vector Group. "Contents" is a
+ * display name, which a localized After Effects translates («Содержание»,
+ * «Inhalt», …) and which is not on Adobe's list of names accessible by name.
  */
 function jsxShapeGroupPreamble(args: Record<string, unknown>): string {
   return `
-        var _contents = _layer.property("Contents");
+        var _contents = _layer.property("ADBE Root Vectors Group");
         // Non-shape layers have no Contents, and property(index) throws on
         // out-of-range instead of returning null. Both would surface as a raw
         // ExtendScript error without these checks.
@@ -38,7 +43,7 @@ registerOp({
   toJsx(args) {
     return `
             ${jsxCompLayerPreamble(args)}
-            var _contents = _layer.property("Contents");
+            var _contents = _layer.property("ADBE Root Vectors Group");
             var _grp = _contents.addProperty("ADBE Vector Group");
             ${args.name ? `_grp.name = ${jsxVal(args.name)};` : ""}
             return { ok: true, groupIndex: _grp.propertyIndex, name: _grp.name };
@@ -84,7 +89,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _rect = _grp.property("Contents").addProperty("ADBE Vector Shape - Rect");
+            var _rect = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Rect");
             _rect.property("ADBE Vector Rect Size").setValue(${jsxVal(args.size)});
             _rect.property("ADBE Vector Rect Position").setValue(${jsxVal(args.position ?? [0, 0])});
             _rect.property("ADBE Vector Rect Roundness").setValue(${jsxVal(args.roundness ?? 0)});
@@ -117,7 +122,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _el = _grp.property("Contents").addProperty("ADBE Vector Shape - Ellipse");
+            var _el = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Ellipse");
             _el.property("ADBE Vector Ellipse Size").setValue(${jsxVal(args.size)});
             return { ok: true, name: _el.name };
         `;
@@ -155,7 +160,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _fill = _grp.property("Contents").addProperty("ADBE Vector Graphic - Fill");
+            var _fill = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Graphic - Fill");
             _fill.property("ADBE Vector Fill Color").setValue(${jsxVal(args.color)});
             ${args.opacity !== undefined ? `_fill.property("ADBE Vector Fill Opacity").setValue(${jsxVal(args.opacity)});` : ""}
             return { ok: true, name: _fill.name };
@@ -206,7 +211,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _pathProp = _grp.property("Contents").addProperty("ADBE Vector Shape - Group");
+            var _pathProp = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Group");
             var _shape = new Shape();
             _shape.vertices = ${jsxVal(args.vertices)};
             _shape.closed = ${jsxVal(args.closed !== false)};
@@ -251,7 +256,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _trim = _grp.property("Contents").addProperty("ADBE Vector Filter - Trim");
+            var _trim = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Trim");
             _trim.property("ADBE Vector Trim Start").setValue(${jsxVal(args.start ?? 0)});
             _trim.property("ADBE Vector Trim End").setValue(${jsxVal(args.end ?? 100)});
             _trim.property("ADBE Vector Trim Offset").setValue(${jsxVal(args.offset ?? 0)});
@@ -290,7 +295,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _merge = _grp.property("Contents").addProperty("ADBE Vector Filter - Merge");
+            var _merge = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Merge");
             var _modeMap = { "merge": 1, "add": 2, "subtract": 3, "intersect": 4, "excludeIntersections": 5 };
             var _m = _modeMap[${jsxVal(args.mode ?? "merge")}] || 1;
             _merge.property("ADBE Vector Merge Type").setValue(_m);
@@ -324,7 +329,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _stroke = _grp.property("Contents").addProperty("ADBE Vector Graphic - Stroke");
+            var _stroke = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Graphic - Stroke");
             _stroke.property("ADBE Vector Stroke Color").setValue(${jsxVal(args.color)});
             _stroke.property("ADBE Vector Stroke Width").setValue(${jsxVal(args.width ?? 2)});
             return { ok: true, name: _stroke.name };
@@ -434,7 +439,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _star = _grp.property("Contents").addProperty("ADBE Vector Shape - Star");
+            var _star = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Star");
             _star.property("ADBE Vector Star Type").setValue(${jsxVal(args.starType ?? "star")} === "polygon" ? 2 : 1);
             _star.property("ADBE Vector Star Points").setValue(${jsxVal(args.points ?? 5)});
             _star.property("ADBE Vector Star Position").setValue(${jsxVal(args.position ?? [0, 0])});
@@ -495,7 +500,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _rep = _grp.property("Contents").addProperty("ADBE Vector Filter - Repeater");
+            var _rep = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Repeater");
             _rep.property("ADBE Vector Repeater Copies").setValue(${jsxVal(args.copies ?? 3)});
             ${args.offset !== undefined ? `_rep.property("ADBE Vector Repeater Offset").setValue(${jsxVal(args.offset)});` : ""}
             var _rxf = _rep.property("ADBE Vector Repeater Transform");
@@ -527,7 +532,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _rc = _grp.property("Contents").addProperty("ADBE Vector Filter - RC");
+            var _rc = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - RC");
             _rc.property("ADBE Vector RoundCorner Radius").setValue(${jsxVal(args.radius ?? 10)});
             return { ok: true, name: _rc.name };
         `;
@@ -559,7 +564,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _off = _grp.property("Contents").addProperty("ADBE Vector Filter - Offset");
+            var _off = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Offset");
             _off.property("ADBE Vector Offset Amount").setValue(${jsxVal(args.amount ?? 10)});
             var _joinMap = { "miter": 1, "round": 2, "bevel": 3 };
             ${args.lineJoin !== undefined ? `_off.property("ADBE Vector Offset Line Join").setValue(_joinMap[${jsxVal(args.lineJoin)}] || 1);` : ""}
@@ -608,7 +613,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _wig = _grp.property("Contents").addProperty("ADBE Vector Filter - Roughen");
+            var _wig = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Roughen");
             _wig.property("ADBE Vector Roughen Size").setValue(${jsxVal(args.size ?? 10)});
             _wig.property("ADBE Vector Roughen Detail").setValue(${jsxVal(args.detail ?? 10)});
             ${args.pointType !== undefined ? `_wig.property("ADBE Vector Roughen Points").setValue(${jsxVal(args.pointType)} === "smooth" ? 2 : 1);` : ""}
@@ -651,7 +656,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _zz = _grp.property("Contents").addProperty("ADBE Vector Filter - Zigzag");
+            var _zz = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Zigzag");
             _zz.property("ADBE Vector Zigzag Size").setValue(${jsxVal(args.size ?? 10)});
             _zz.property("ADBE Vector Zigzag Detail").setValue(${jsxVal(args.ridgesPerSegment ?? 10)});
             ${args.pointType !== undefined ? `_zz.property("ADBE Vector Zigzag Points").setValue(${jsxVal(args.pointType)} === "smooth" ? 2 : 1);` : ""}
@@ -678,7 +683,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _pb = _grp.property("Contents").addProperty("ADBE Vector Filter - PB");
+            var _pb = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - PB");
             _pb.property("ADBE Vector PuckerBloat Amount").setValue(${jsxVal(args.amount ?? 0)});
             return { ok: true, name: _pb.name };
         `;
@@ -704,7 +709,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _tw = _grp.property("Contents").addProperty("ADBE Vector Filter - Twist");
+            var _tw = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Twist");
             _tw.property("ADBE Vector Twist Angle").setValue(${jsxVal(args.angle ?? 90)});
             ${args.center !== undefined ? `_tw.property("ADBE Vector Twist Center").setValue(${jsxVal(args.center)});` : ""}
             return { ok: true, name: _tw.name };
@@ -734,7 +739,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _gf = _grp.property("Contents").addProperty("ADBE Vector Graphic - G-Fill");
+            var _gf = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Graphic - G-Fill");
             _gf.property("ADBE Vector Grad Type").setValue(${jsxVal(args.gradientType ?? "linear")} === "radial" ? 2 : 1);
             ${args.startPoint !== undefined ? `_gf.property("ADBE Vector Grad Start Pt").setValue(${jsxVal(args.startPoint)});` : ""}
             ${args.endPoint !== undefined ? `_gf.property("ADBE Vector Grad End Pt").setValue(${jsxVal(args.endPoint)});` : ""}
@@ -767,7 +772,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _gs = _grp.property("Contents").addProperty("ADBE Vector Graphic - G-Stroke");
+            var _gs = _grp.property("ADBE Vectors Group").addProperty("ADBE Vector Graphic - G-Stroke");
             _gs.property("ADBE Vector Grad Type").setValue(${jsxVal(args.gradientType ?? "linear")} === "radial" ? 2 : 1);
             ${args.startPoint !== undefined ? `_gs.property("ADBE Vector Grad Start Pt").setValue(${jsxVal(args.startPoint)});` : ""}
             ${args.endPoint !== undefined ? `_gs.property("ADBE Vector Grad End Pt").setValue(${jsxVal(args.endPoint)});` : ""}
@@ -814,7 +819,7 @@ registerOp({
     return `
             ${jsxCompLayerPreamble(args)}
             ${jsxShapeGroupPreamble(args)}
-            var _contents = _grp.property("Contents");
+            var _contents = _grp.property("ADBE Vectors Group");
             if (!_contents) return { ok: false, error: "shape group '" + _grp.name + "' has no Contents group" };
             var _wt = _contents.addProperty("ADBE Vector Filter - Wiggler");
             _wt.property("ADBE Vector Xform Temporal Freq").setValue(${jsxVal(args.wigglesPerSecond ?? 2)});

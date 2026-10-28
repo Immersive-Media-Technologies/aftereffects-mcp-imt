@@ -50,9 +50,27 @@ AE.errText = function (e) {
             if (undecoded) msg += " [hint: the code reached ExtendScript with its escapes undecoded (\\n as two characters)"
                 + " - a foreign JSON.parse in the shared engine; ae-mcp >= 0.5.8 parses with its own]";
         }
-        // ExtendScript throws «Invalid numeric result (divide by zero?)» when an ARRAY property value
-        // (Position, Scale, Anchor Point, a Color) is concatenated into a string ("pos=" + p.value).
-        if (new RegExp("Invalid numeric result|\u043d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u0447\u0438\u0441\u043b\u043e\u0432\u043e\u0439", "i").test(msg)) {
+        // «Invalid numeric result (divide by zero?)» is thrown when an ARRAY property value (Position, Scale,
+        // Anchor Point, a Color) is concatenated into a string ("pos=" + p.value). It is After Effects' own
+        // error (ZString $$$/AE/BEE/LStr/0392), not one of ExtendScript's numbered core errors (e.number
+        // 2-79, whose messages are English on every UI language), and AE translates it - so it is recognised
+        // by the text AE itself uses for it in THIS UI language (localize() of that ZString), and by its
+        // spelling in the ten languages AE ships as the fallback (a host without localize(), e.g. the tests).
+        var invalidNumeric = false;
+        try {
+            if (typeof localize === "function") {
+                var own = String(localize("$$$/AE/BEE/LStr/0392=invalid numeric result (divide by zero?)"));
+                own = own.split("(")[0].split("\uff08")[0].split(".")[0].replace(/^\s+|\s+$/g, "").toLowerCase();
+                if (own.length >= 4 && msg.toLowerCase().indexOf(own) !== -1) invalidNumeric = true;
+            }
+        } catch (eLoc) { /* no localize() here - the fallback below decides */ }
+        if (!invalidNumeric && new RegExp("invalid numeric result|Ung\u00fcltiges numerisches Ergebnis|resultado num\u00e9rico no v\u00e1lido"
+            + "|r\u00e9sultat num\u00e9rique incorrect|risultato numerico non valido|\u6570\u5024\u7d50\u679c\u304c\u7121\u52b9\u3067\u3059"
+            + "|\uc798\ubabb\ub41c \uc22b\uc790 \uacb0\uacfc\uc785\ub2c8\ub2e4|resultado num\u00e9rico inv\u00e1lido"
+            + "|\u043d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u0447\u0438\u0441\u043b\u043e\u0432\u043e\u0439|\u6570\u5b57\u7ed3\u679c\u65e0\u6548", "i").test(msg)) {
+            invalidNumeric = true;
+        }
+        if (invalidNumeric) {
             msg += " [hint: an array value (position/scale/anchor/color) was concatenated into a string -"
                 + " ExtendScript throws here; use value.join(',') or JSON.stringify(value)]";
         }
@@ -627,9 +645,12 @@ AE.serializeLayerFull = function (layer, opts) {
     var out = AE.serializeLayerSummary(layer);
     // Parent by index for simple remapping on import.
     out.parent = layer.parent ? { index: layer.parent.index, name: layer.parent.name } : null;
-    // Property tree (Transform + Effects + Masks + Text + Contents + Material Options + Audio)
+    // Property tree (Transform + Effects + Masks + Text + Contents + Material Options + Audio).
+    // Groups are addressed by matchName unless their English name is on Adobe's list of properties
+    // accessible by name (Effects, Masks, Text, Time Remap, Marker): "Transform", "Contents",
+    // "Material Options" and "Audio" are display names, which a localized After Effects translates.
     if (opts.includeProperties !== false) {
-        try { out.transformGroup = AE.serializePropertyGroup(layer.property("Transform"), 0, 4); } catch (eT) { out.transformGroup = null; }
+        try { out.transformGroup = AE.serializePropertyGroup(layer.property("ADBE Transform Group"), 0, 4); } catch (eT) { out.transformGroup = null; }
         try {
             var effects = layer.property("Effects");
             out.effectsGroup = (effects && effects.numProperties > 0) ? AE.serializePropertyGroup(effects, 0, 6) : null;
@@ -644,19 +665,19 @@ AE.serializeLayerFull = function (layer, opts) {
         if (layer instanceof ShapeLayer) {
             // Shape layers have a Contents group that holds the shape vector
             // graphics. Walk deeper because shape groups nest several levels.
-            try { out.contentsGroup = AE.serializePropertyGroup(layer.property("Contents"), 0, 10); } catch (eCt) { out.contentsGroup = null; }
+            try { out.contentsGroup = AE.serializePropertyGroup(layer.property("ADBE Root Vectors Group"), 0, 10); } catch (eCt) { out.contentsGroup = null; }
         }
         // Material options (3D layers)
         if (layer instanceof AVLayer && layer.threeDLayer) {
             try {
-                var mat = layer.property("Material Options");
+                var mat = layer.property("ADBE Material Options Group");
                 out.materialOptionsGroup = mat ? AE.serializePropertyGroup(mat, 0, 3) : null;
             } catch (eMo) { out.materialOptionsGroup = null; }
         }
         // Audio (if layer has audio)
         if (layer instanceof AVLayer && layer.hasAudio) {
             try {
-                var au = layer.property("Audio");
+                var au = layer.property("ADBE Audio Group");
                 out.audioGroup = au ? AE.serializePropertyGroup(au, 0, 3) : null;
             } catch (eAu) { out.audioGroup = null; }
         }
@@ -760,4 +781,64 @@ AE.serializeCompMarkers = function (comp) {
         if (!mp || mp.numKeys === 0) return null;
         return AE.serializeProperty(mp);
     } catch (e) { return null; }
+};
+
+// ---------- Render-settings / output-module template names ----------
+// Template names are written into the user's preferences in the UI language After Effects ran in when
+// it created them («Оптимальные настройки», not "Best Settings", on a Russian AE), and applyTemplate()
+// takes them only verbatim. `available` is what this AE lists (RenderQueueItem.templates /
+// OutputModule.templates); `groups` (render.ts) is each built-in template under its name in every UI
+// language AE ships, with the ZString key AE translates it from. Order: the exact name; the name up to
+// case, spacing and dash style; then the built-in template the name belongs to, under the name this AE
+// gives it (localize() of its key first, then the table). Returns { name, via } or null — a name is only
+// ever resolved to one this AE actually lists.
+AE.normTemplateName = function (s) {
+    return String(s).replace(/[\u2012\u2013\u2014\u2015\u2212]/g, "-").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "").toLowerCase();
+};
+
+AE.resolveTemplateName = function (requested, available, groups) {
+    var norm = AE.normTemplateName;
+    var want = norm(requested);
+    var i, j, k;
+    if (!available) return null;
+    for (i = 0; i < available.length; i++) {
+        if (String(available[i]) === String(requested)) return { name: String(available[i]), via: "exact" };
+    }
+    for (i = 0; i < available.length; i++) {
+        if (norm(available[i]) === want) return { name: String(available[i]), via: "normalized" };
+    }
+    if (!groups) return null;
+    for (j = 0; j < groups.length; j++) {
+        var names = groups[j].names || [];
+        var member = false;
+        for (k = 0; k < names.length; k++) {
+            if (norm(names[k]) === want) { member = true; break; }
+        }
+        if (!member) continue;
+        var cands = [];
+        try {
+            if (typeof localize === "function" && groups[j].key && names.length > 0) {
+                cands.push(String(localize(groups[j].key + "=" + names[0])));
+            }
+        } catch (eLoc) { /* no localize() - the table below still covers the shipped languages */ }
+        for (k = 0; k < names.length; k++) cands.push(names[k]);
+        for (k = 0; k < cands.length; k++) {
+            var c = norm(cands[k]);
+            for (i = 0; i < available.length; i++) {
+                if (norm(available[i]) === c) return { name: String(available[i]), via: "builtin" };
+            }
+        }
+        return null;
+    }
+    return null;
+};
+
+// The names a user sees in the template menus — AE also lists hidden "_HIDDEN X-Factor …" entries.
+AE.visibleTemplateNames = function (available) {
+    var out = [];
+    if (!available) return out;
+    for (var i = 0; i < available.length; i++) {
+        if (String(available[i]).indexOf("_HIDDEN") !== 0) out.push(String(available[i]));
+    }
+    return out;
 };

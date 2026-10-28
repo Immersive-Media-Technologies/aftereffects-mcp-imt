@@ -174,7 +174,11 @@ export const doTool = defineTool({
 
     if (!result.ok) {
       return errorResult(result.errorCode ?? "TRANSPORT", result.error ?? "unknown failure", {
-        details: { operation: op.name },
+        // errorNumber: ExtendScript's e.number — classify by it, not by the (localized) message.
+        details: {
+          operation: op.name,
+          ...(typeof result.errorNumber === "number" ? { errorNumber: result.errorNumber } : {}),
+        },
         stack: result.stack,
         logs: result.logs,
         durationMs: result.durationMs,

@@ -53,6 +53,15 @@ export interface EvalResult {
    * threw" (JSX_THROW) without parsing `error` prose.
    */
   errorCode: AeErrorCode | null;
+  /**
+   * ExtendScript's `e.number` when the JSX threw (JSX_THROW). Unlike the
+   * message — After Effects translates its own errors into the UI language —
+   * it is the same on every AE, so classify by it: 2 "is undefined",
+   * 8 "Syntax error", 21 "is not an object", 24 "is not a function",
+   * 25 "Expected", 45 "Object is invalid", 48 "File or folder does not exist",
+   * 55 "Object does not support the property or method". Absent/null otherwise.
+   */
+  errorNumber?: number | null;
   /** Optional stack trace from ExtendScript. */
   stack: string | null;
   /** Breadcrumb messages pushed via `log(...)` inside the JSX. */

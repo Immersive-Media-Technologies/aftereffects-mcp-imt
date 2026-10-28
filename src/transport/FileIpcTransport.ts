@@ -41,6 +41,8 @@ interface DispatcherResponse {
   phase?: "dispatch" | "execute" | "engine";
   result: unknown;
   error: string | null;
+  /** ExtendScript's `e.number` when the code threw; absent from older dispatchers. */
+  errorNumber?: number | null;
   stack: string | null;
   logs: string[];
 }
@@ -460,6 +462,7 @@ export class FileIpcTransport implements AeTransport {
       result: null,
       error: dispatchFailure ? `dispatcher error: ${parsed.error}` : parsed.error,
       errorCode: dispatchFailure ? "DISPATCHER" : "JSX_THROW",
+      errorNumber: typeof parsed.errorNumber === "number" ? parsed.errorNumber : null,
       stack: parsed.stack,
       logs: parsed.logs ?? [],
       durationMs,
