@@ -47,7 +47,7 @@ try:
 except ImportError:  # pragma: no cover
     sys.exit("conform.py needs opencv-python-headless and numpy: pip install opencv-python-headless numpy")
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 IMG_EXT = (".png", ".tif", ".tiff", ".jpg", ".jpeg", ".exr")
 
 
@@ -815,7 +815,11 @@ def cmd_time_plan(a: argparse.Namespace) -> None:
                      "slip_frames": pc["offset_frames"], "slip_seconds": round(pc["offset_frames"] / fps, 6),
                      "repeat_frames": pc["repeat_frames"],
                      "ref_frames": [q0, q1] if not retime_ref else [q0 + pc["offset_frames"], q1 + pc["offset_frames"]]})
-    # After Effects: Time Remap keyframes (comp time → source time) — the same step keys, incl. first/last
+    # After Effects: the same cuts as layer pieces — split the layer at each piece start, then per piece
+    # startTime -= slip (a positive slip shows later source), inPoint/outPoint = the piece's comp range
+    ae_pieces = [{"in_point": c["sequence_seconds"][0], "out_point": c["sequence_seconds"][1],
+                  "start_time_shift_seconds": round(-c["slip_frames"] / fps, 6), "slip_frames": c["slip_frames"]} for c in cuts]
+    # After Effects alternative: Time Remap keyframes (comp time → source time), the same step keys, incl. first/last
     ae = [{"time": r["sequence_seconds"], "value": r["source_seconds"]} for r in remap]
     hold = tm.get("hold")
     hold_plan = None
@@ -840,7 +844,7 @@ def cmd_time_plan(a: argparse.Namespace) -> None:
                          "ramp keys (one per coincidence point) are not frame-exact — do not use them for sync",
            "remap_points": kept, "remap_speeds_ok": ok, "trim": trim,
            "time_remap_ui_points": [{"source_seconds": r["source_seconds"], "sequence_seconds": r["sequence_seconds"]} for r in kept],
-           "cut_and_slip": cuts, "ae_time_remap_keys": ae, "hold": hold_plan,
+           "cut_and_slip": cuts, "ae_pieces": ae_pieces, "ae_time_remap_keys": ae, "hold": hold_plan,
            "expected_mapping": expected,
            "summary": tm.get("summary"),
            "table": [f"seq {r['seq_frame']:3d} → src {r['src_frame']:3d}  (ref {r['ref_frame']:3d} / mov {r['mov_frame']:3d})  "

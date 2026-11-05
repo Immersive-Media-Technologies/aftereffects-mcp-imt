@@ -1,7 +1,17 @@
 ---
 name: ae
-description: Driving Adobe After Effects as an agent through AfterEffects-MCP-IMT (ae_catalog / ae_do / ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI workarounds for it, camera tracking, attaching 3D content to tracked footage, testing third-party plugins, rendering, native motion graphics — on localized After Effects in any UI language too. Read at the start of any After Effects task. This file is the router — read the recipe or plugin file it points to, not everything.
-revision: 5
+description: |
+  Use at the start of any Adobe After Effects task driven through AfterEffects-MCP-IMT (ae_catalog, ae_do,
+  ae_comp_info, ae_layer_info, ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI
+  workarounds, camera tracking, attaching 3D content, plugin tests, rendering, motion graphics, masks,
+  layer conform — on an After Effects in any UI language. This file is the router: general rules and a
+  map of recipes and plugin files — open the one each task points to.
+description_ru: |
+  Открывать в начале любой задачи в Adobe After Effects через AfterEffects-MCP-IMT: гигиена проекта, что
+  не умеет ExtendScript и обходы через UI, трекинг камеры, 3D-вставки, тесты плагинов, рендер, моушн-графика,
+  маски, синхронизация слоёв. Это роутер: общие правила и карта рецептов — по задаче открывать её файл.
+version: 1.6.0
+changes: "1.6.0 (05.11): the map (§3) is in the skill-creator form — one entry per ability with «Read when …»; layer conform is a cut-only technique (the generated lower layer is split into pieces shifted by whole frames, the plate stays whole with the matte) with its trigger phrases; Time Remap stays a separate ability."
 updated_at: 2026-11-05
 ---
 
@@ -84,18 +94,40 @@ crop → click; never click a thumbnail (it switches apps, the button is not the
 "AE window shrank to a plate at the bottom left" of 11.10, not something AE does on save. `screencapture` needs `-D <n>` on a multi-display Mac. On a 4K display at
 1:1 the screenshot pixels equal screen points; on Retina divide by the backing scale.
 
-## 3. Recipes — read the one you need
+## 3. Map of recipes
 
-| task | read |
-|---|---|
-| camera solve from footage (3D Camera Tracker): launch, wait, create camera, ground plane, read the camera back | `recipes/camera-track.md` |
-| put a 3D thing (splat, model, solid, graphic) on tracked footage: null at the origin, parent/expressions, scale, slide check | `recipes/attach-3d.md` |
-| test a third-party plugin (apply, dump parameters with matchNames, feed a model layer, render, timing, verdict) | `recipes/plugin-test.md` |
-| render: templates on a localized AE, output module, a preview segment, frame checks | `recipes/render.md` |
-| motion graphics (titles, lower thirds, logo stings, infographics) — the editable-comp method, CONTROLS rig, Essential Graphics | `recipes/motion-graphics.md` |
-| masks, track mattes, Roto Brush / Object Matte, alpha | `recipes/masks-roto.md` |
-| planar / point tracking in Mocha AE and the Tracker panel | `recipes/tracking-mocha.md` |
-| sync an AI-generated layer with the plate before compositing: time drift (Time Remap keys from measured coincidence points), geometry (Transform per piece), colour (Levels), matte — numerics by `scripts/conform.py` | `recipes/layer-conform.md` |
+Find every map entry — every solution — this task touches: one task may need several (e.g. a camera
+solve, the 3D insert on it, the render). Before answering, follow the link of each such entry and
+Read its file: a description only says where the answer is, it is not the answer. No entry for the
+task or a part of it — work by the general rules above and say so.
+
+- **Camera solve from footage (3D Camera Tracker)** — `recipes/camera-track.md`: launching the
+  analysis, waiting, Create Camera, ground plane and origin, reading the camera back. Read when the
+  user asks to track the camera, solve a shot, get a 3D camera from footage.
+- **Put a 3D thing on tracked footage** (splat, model, solid, graphic) — `recipes/attach-3d.md`: the
+  null at the origin, parenting and expressions, scale, the slide check. Read when something must sit
+  on a tracked plate or «не ехать» on it.
+- **Test a third-party plugin** — `recipes/plugin-test.md`: apply, dump parameters with matchNames,
+  feed a model layer, render, timing, verdict, the knowledge file to write. Read when a plugin is
+  evaluated, compared or documented.
+- **Render** — `recipes/render.md`: templates on a localized AE, output module, a preview segment,
+  frame checks. Read when a render, preview, output module or export is asked.
+- **Motion graphics** (titles, lower thirds, logo stings, infographics) — `recipes/motion-graphics.md`:
+  the editable-comp method, the CONTROLS rig, Essential Graphics. Read when titles, graphics or an
+  animated template are asked.
+- **Masks, track mattes, Roto Brush / Object Matte, alpha** — `recipes/masks-roto.md`: mask and matte
+  operations, roto propagation, alpha handling. Read when something must be cut out, matted, keyed or
+  roto'd.
+- **Planar / point tracking in Mocha AE and the Tracker panel** — `recipes/tracking-mocha.md`: what to
+  script, what the user does, reading tracks back. Read when a surface, screen insert or point track is
+  asked.
+- **Layer conform — sync an AI-generated / edited layer with the original plate** — `recipes/layer-conform.md`:
+  the generator model, the measuring engine `scripts/conform.py`, time by cutting the lower (generated)
+  layer into pieces shifted by whole frames and the per-frame verify, Transform per piece, Levels on
+  the lower layer towards the upper, the matte on the upper (original) layer, report and acceptance.
+  Read when the user says «sync the layers / tracks», «conform the layers», «align the generation to
+  the plate», «синхронизация видео дорожек», «подгонка видео дорожек», «совместить генерацию с
+  исходником», «замена фона генерацией», or two layers of one shot double on the people.
 
 ## 4. Plugins — knowledge files
 

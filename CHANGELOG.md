@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Layer conform recipe is a **cut-only technique** (user canon 05.11): the generated lower layer is
+  split into pieces at every measured lag step (`layer.split`) and each piece's `startTime` shifted by
+  whole frames (`plan.ae_pieces`); the plate stays whole with the matte; Levels on the lower layer.
+  Time Remap is out of the technique; the step keys remain in the plan for comps where pieces are
+  impossible. Router row lists the trigger phrases (EN/RU); working files go into the session folder.
 - Layer conform recipe: Time Remap keys are **step keys** — a key at every lag change, so the linear
   interpolation reproduces the measured staircase frame for frame; one key per coincidence point with
   an averaged speed (`--route ramp`) is documented as not frame-exact. Verify every frame (`--every 1`).
