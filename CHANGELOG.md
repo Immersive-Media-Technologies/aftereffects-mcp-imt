@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Layer conform recipe and engine** (`skills/ae/recipes/layer-conform.md`, `skills/ae/scripts/conform.py`):
+  how to make an AI-generated layer coincide with the plate before compositing — time first (Time Remap
+  keyframes from measured coincidence points, a hold key for the generator's frozen tail), then Transform
+  per piece, then Levels on the lower layer, then the matte. The engine measures rendered PNG frames
+  (numpy + opencv-python-headless) and writes the JSON plans `keyframe.set_batch`, `property.set` and
+  `effect.set_property` apply; it never talks to After Effects. Shared with Premiere-MCP-IMT.
+
 ### Changed
 
 - README in plain Markdown — Glama and other catalogs strip raw HTML: the «Add to Cursor» button, client icons now show there too.

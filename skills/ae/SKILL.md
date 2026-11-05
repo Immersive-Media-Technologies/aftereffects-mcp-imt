@@ -1,8 +1,8 @@
 ---
 name: ae
 description: Driving Adobe After Effects as an agent through AfterEffects-MCP-IMT (ae_catalog / ae_do / ae_render_frame …) — project hygiene, what ExtendScript cannot do and the UI workarounds for it, camera tracking, attaching 3D content to tracked footage, testing third-party plugins, rendering, native motion graphics — on localized After Effects in any UI language too. Read at the start of any After Effects task. This file is the router — read the recipe or plugin file it points to, not everything.
-revision: 4
-updated_at: 2026-10-27
+revision: 5
+updated_at: 2026-11-05
 ---
 
 # After Effects — agent skill (over ae-mcp, not instead of it)
@@ -95,6 +95,7 @@ crop → click; never click a thumbnail (it switches apps, the button is not the
 | motion graphics (titles, lower thirds, logo stings, infographics) — the editable-comp method, CONTROLS rig, Essential Graphics | `recipes/motion-graphics.md` |
 | masks, track mattes, Roto Brush / Object Matte, alpha | `recipes/masks-roto.md` |
 | planar / point tracking in Mocha AE and the Tracker panel | `recipes/tracking-mocha.md` |
+| sync an AI-generated layer with the plate before compositing: time drift (Time Remap keys from measured coincidence points), geometry (Transform per piece), colour (Levels), matte — numerics by `scripts/conform.py` | `recipes/layer-conform.md` |
 
 ## 4. Plugins — knowledge files
 
