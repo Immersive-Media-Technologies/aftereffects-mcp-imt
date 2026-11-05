@@ -282,6 +282,20 @@ def delta_to_params(d: Dict[str, float], ds: float) -> np.ndarray:
     return np.array([d["scale_w"] / 100 - 1, d["scale_h"] / 100 - 1, math.radians(d["rot"]), d["tx"] / ds, d["ty"] / ds])
 
 
+def compose_deltas(first: Dict[str, float], second: Dict[str, float]) -> Dict[str, float]:
+    """Delta equal to applying `first`, then `second` (both about the frame centre, full-px translations)."""
+    def mat(d):
+        th = math.radians(d["rot"])
+        return np.array([[math.cos(th), -math.sin(th)], [math.sin(th), math.cos(th)]]) @ np.diag([d["scale_w"] / 100, d["scale_h"] / 100])
+    A1, A2 = mat(first), mat(second)
+    A = A2 @ A1
+    t = A2 @ np.array([first["tx"], first["ty"]]) + np.array([second["tx"], second["ty"]])
+    sx = math.hypot(A[0, 0], A[1, 0])
+    sy = math.hypot(A[0, 1], A[1, 1])
+    rot = math.degrees(math.atan2(A[1, 0], A[0, 0]))
+    return {"scale_w": round(100 * sx, 4), "scale_h": round(100 * sy, 4), "rot": round(rot, 4), "tx": round(float(t[0]), 2), "ty": round(float(t[1]), 2)}
+
+
 def delta_matrix(d: Dict[str, float], W: float, H: float, ds: float = 1.0) -> np.ndarray:
     """2×3 matrix applying a delta (full-px translation) to an image of size W×H at scale 1/ds."""
     sx, sy = d["scale_w"] / 100, d["scale_h"] / 100
@@ -404,17 +418,47 @@ def cmd_frames(a: argparse.Namespace) -> None:
 
 # ----------------------------------------------------------------------------- coarse-fit
 
+def global_shift(ref_g: np.ndarray, mov_g: np.ndarray) -> Tuple[float, float]:
+    """Whole-frame translation (analysis px) that brings mov onto ref — for offsets too large for tiles."""
+    a = norm(ref_g, 6)
+    b = norm(mov_g, 6)
+    win = cv2.createHanningWindow((a.shape[1], a.shape[0]), cv2.CV_32F)
+    (dx, dy), resp = cv2.phaseCorrelate(b.astype(np.float32), a.astype(np.float32), win)
+    return float(dx), float(dy)
+
+
 def fit_frame(ref: Layer, mov: Layer, t: int, m: int, geom: Optional[Dict[str, float]], T: int, step: int,
-              max_shift: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Tiles + fit5 between reference frame t and moving frame m (moving placed by geom first)."""
+              max_shift: float, pre_shift: bool = False) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Tiles + fit5 between reference frame t and moving frame m (moving placed by geom first).
+
+    pre_shift: measure the whole-frame translation first and fold it into the result, so that offsets
+    larger than a tile (the generation placed by eye, a 4:3 generation in a wider frame) still fit.
+    """
     rg, _, ra = ref.get(t)
     mg, _, ma = mov.get(m)
     if geom:
         mg = apply_delta(mg, geom, ref.ds)
         ma = apply_delta(ma, geom, ref.ds)
+    s = (0.0, 0.0)
+    if pre_shift:
+        s = global_shift(rg, mg)
+        if abs(s[0]) > 4 or abs(s[1]) > 4:
+            d0 = {"scale_w": 100, "scale_h": 100, "rot": 0, "tx": s[0] * ref.ds, "ty": s[1] * ref.ds}
+            mg = apply_delta(mg, d0, ref.ds)
+            ma = apply_delta(ma, d0, ref.ds)
+        else:
+            s = (0.0, 0.0)
     valid = valid_mask([ra, ma])
     tt = tiles(norm(rg, 6), norm(mg, 6), valid, T=T, step=step, max_shift=max_shift)
     p, res = fit5(tt, ref.W, ref.H)
+    if s != (0.0, 0.0) and len(tt) >= 6:
+        ax, ay, th, tx, ty = p
+        A = np.array([[1 + ax, -th], [th, 1 + ay]])
+        tt_total = A @ np.array(s) + np.array([tx, ty])
+        p = np.array([ax, ay, th, tt_total[0], tt_total[1]])
+        tt = tt.copy()
+        tt[:, 2] += s[0]
+        tt[:, 3] += s[1]
     return tt, p, res
 
 
@@ -429,7 +473,7 @@ def cmd_coarse_fit(a: argparse.Namespace) -> None:
         m = t + a.lag
         if not (0 <= m < len(mov)):
             continue
-        tt, p, res = fit_frame(ref, mov, t, m, None, a.tile, a.step, a.max_shift / a.ds)
+        tt, p, res = fit_frame(ref, mov, t, m, None, a.tile, a.step, a.max_shift / a.ds, pre_shift=True)
         if len(tt) < 12:
             print(f"frame {t}: only {len(tt)} tiles, skipped", file=sys.stderr)
             continue
@@ -666,9 +710,16 @@ def cmd_time_plan(a: argparse.Namespace) -> None:
     rs = a.range_start if a.range_start is not None else a.clip_start
     # route B: speed keyframes on the moving clip — media frame plays at sequence time
     remap = []
+    retime_ref = a.retime == "ref"
     for p in pts:
-        src = a.clip_in + (p["mov_frame"] + a.mov_first_frame) / fps
-        seq_t = rs + p["ref_frame"] / fps
+        if retime_ref:
+            # the reference layer gets the speed keys: its frame ref_frame must play when the moving
+            # layer shows mov_frame (the moving layer keeps its own time)
+            src = a.clip_in + (p["ref_frame"] + a.mov_first_frame) / fps
+            seq_t = rs + p["mov_frame"] / fps
+        else:
+            src = a.clip_in + (p["mov_frame"] + a.mov_first_frame) / fps
+            seq_t = rs + p["ref_frame"] / fps
         remap.append({"source_seconds": round(src, 6), "sequence_seconds": round(seq_t, 6), "ref_frame": p["ref_frame"],
                       "mov_frame": p["mov_frame"]})
     # keep the host's constraints: both strictly increasing by ≥ 1 frame, speeds 10–1000 %
@@ -697,19 +748,23 @@ def cmd_time_plan(a: argparse.Namespace) -> None:
         cuts.append({"ref_frames": [s, e], "sequence_seconds": [round(rs + s / fps, 6), round(rs + (e + 1) / fps, 6)],
                      "slip_frames": run["lag"], "slip_seconds": round(run["lag"] / fps, 6)})
     # After Effects: Time Remap keyframes (comp time → source time) incl. first and last frame
-    ae = []
-    for p in pts:
-        ae.append({"time": round(rs + p["ref_frame"] / fps, 6), "value": round(a.clip_in + (p["mov_frame"] + a.mov_first_frame) / fps, 6)})
+    ae = [{"time": r["sequence_seconds"], "value": r["source_seconds"]} for r in remap]
     hold = tm.get("hold")
     hold_plan = None
-    if hold:
+    trim = None
+    if retime_ref and pts:
+        last = pts[-1]
+        trim = {"why": "the reference layer's frozen tail is not needed: after its last matched frame the clip is cut",
+                "sequence_seconds": round(rs + (last["mov_frame"] + 1) / fps, 6), "last_source_frame": last["ref_frame"],
+                "premiere": "set the clip's out point / trim_clip_end at sequence_seconds (the moving layer keeps its length)"}
+    elif hold:
         hold_plan = {"sequence_seconds_from": round(rs + hold["ref_from_frame"] / fps, 6),
                      "mov_frame": hold["mov_frame_to_hold"],
                      "source_seconds": round(a.clip_in + (hold["mov_frame_to_hold"] + a.mov_first_frame) / fps, 6),
                      "premiere": "freeze_frame on the moving clip at that sequence time (or a last speed key to 0 % is not available — use freeze_frame)",
                      "after_effects": "Time Remap: hold keyframe at sequence_seconds_from with value source_seconds"}
     out = {"version": VERSION, "fps": fps, "clip_start": a.clip_start, "clip_in": a.clip_in, "range_start": rs,
-           "route_default": "remap", "remap_points": kept, "remap_speeds_ok": ok,
+           "retime": a.retime, "route_default": "remap", "remap_points": kept, "remap_speeds_ok": ok, "trim": trim,
            "time_remap_ui_points": [{"source_seconds": r["source_seconds"], "sequence_seconds": r["sequence_seconds"]} for r in kept],
            "cut_and_slip": cuts, "ae_time_remap_keys": ae, "hold": hold_plan,
            "summary": tm.get("summary"),
@@ -746,23 +801,26 @@ def cmd_global_fit(a: argparse.Namespace) -> None:
         v = [float(x) for x in a.mov_motion.split(",")]
         base = {"scale_w": v[0], "scale_h": v[1] if len(v) > 1 else v[0], "pos": [v[2], v[3]] if len(v) > 3 else [0.5, 0.5],
                 "rot": v[4] if len(v) > 4 else 0.0}
+    start = load_json(a.geom)["delta"] if a.geom else None
     rows: Dict[int, dict] = {}
     for t in range(0, nt, a.step):
         m = t + lag[t]
         if not (0 <= m < len(mov)):
             continue
-        tt, p, res = fit_frame(ref, mov, t, m, None, a.tile, a.step_px, a.max_shift / a.ds)
+        tt, p, res = fit_frame(ref, mov, t, m, start, a.tile, a.step_px, a.max_shift / a.ds)
         if len(tt) < 12:
             print(f"frame {t}: only {len(tt)} tiles, skipped", file=sys.stderr)
             continue
         d = params_to_delta(p, a.ds)
+        if start:
+            d = compose_deltas(start, d)
         row = {"t": t, "mov_frame": m, "delta": d, "resid_px": round(float(np.median(res)) * a.ds, 2),
                "resid_p90_px": round(pct(res, 90) * a.ds, 2), "tiles": int(len(tt)),
                "raw_shift_px": [round(float(np.median(tt[:, 2])) * a.ds, 1), round(float(np.median(tt[:, 3])) * a.ds, 1)]}
         if boxes:
             rn = norm(ref.gray(t), 6)
             mg = mov.gray(m)
-            before = box_offsets(rn, norm(mg, 6), boxes, a.ds)
+            before = box_offsets(rn, norm(apply_delta(mg, start, a.ds) if start else mg, 6), boxes, a.ds)
             after = box_offsets(rn, norm(apply_delta(mg, d, a.ds), 6), boxes, a.ds)
             row["boxes_before"] = {k: [v["dx"], v["dy"], v["ncc"]] for k, v in before.items()}
             row["boxes_after"] = {k: [v["dx"], v["dy"], v["ncc"]] for k, v in after.items()}
@@ -1213,6 +1271,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--clip-in", type=float, default=0.0, help="media time (s) of the moving clip's first frame")
     p.add_argument("--range-start", type=float, help="sequence time (s) of reference frame 0 (default clip-start)")
     p.add_argument("--mov-first-frame", type=int, default=0, help="media frame index of moving frame 0 relative to clip-in")
+    p.add_argument("--retime", choices=("mov", "ref"), default="mov",
+                   help="which clip gets the speed keys: mov (default — the moving layer follows the reference) or ref (the reference layer, e.g. the generation, is slowed onto the plate's time; clip-start/clip-in then describe that clip, the frozen tail is trimmed)")
     p.add_argument("--out", required=True)
     p.set_defaults(func=cmd_time_plan)
 
@@ -1220,6 +1280,7 @@ def build_parser() -> argparse.ArgumentParser:
     common(p)
     p.add_argument("--out", required=True)
     p.add_argument("--time", help="time.json (moving frame = t + lag[t]; pieces = constant-lag runs)")
+    p.add_argument("--geom", help="coarse.json: starting placement of the moving layer (needed when the offset exceeds a tile); the result includes it")
     p.add_argument("--lag", type=int, default=0)
     p.add_argument("--pieces", help="explicit pieces a-b,c-d (default from time.json or the whole range)")
     p.add_argument("--step", type=int, default=1, help="sample every step-th frame")
