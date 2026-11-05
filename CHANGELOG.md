@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Layer conform recipe: Time Remap keys are **step keys** — a key at every lag change, so the linear
+  interpolation reproduces the measured staircase frame for frame; one key per coincidence point with
+  an averaged speed (`--route ramp`) is documented as not frame-exact. Verify every frame (`--every 1`).
 - README in plain Markdown — Glama and other catalogs strip raw HTML: the «Add to Cursor» button, client icons now show there too.
 
 ## [1.0.2] - 2026-10-28

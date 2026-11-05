@@ -47,7 +47,7 @@ try:
 except ImportError:  # pragma: no cover
     sys.exit("conform.py needs opencv-python-headless and numpy: pip install opencv-python-headless numpy")
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 IMG_EXT = (".png", ".tif", ".tiff", ".jpg", ".jpeg", ".exr")
 
 
@@ -702,26 +702,91 @@ def cmd_time_match(a: argparse.Namespace) -> None:
 
 # ----------------------------------------------------------------------------- time-plan
 
+def frame_mapping(lag: List[int], retime_ref: bool, active: Optional[int] = None) -> List[Tuple[int, int]]:
+    """Exact integer mapping for the retimed layer: (sequence frame index, source frame index), both
+    relative to the exported range. `lag[t]` = moving frame − reference frame t. The sequence index is
+    the frame index of the layer that keeps its own time. Collisions (a lag decrease) drop one source
+    frame; gaps (a lag increase) leave a sequence frame to be filled by its neighbour."""
+    n = len(lag) if active is None else min(active, len(lag))
+    pairs: List[Tuple[int, int]] = []
+    seen_seq, seen_src = set(), set()
+    for t in range(n):
+        seq, srcf = (t + lag[t], t) if retime_ref else (t, t + lag[t])
+        if seq < 0 or srcf < 0 or seq in seen_seq or srcf in seen_src:
+            continue
+        seen_seq.add(seq); seen_src.add(srcf)
+        pairs.append((seq, srcf))
+    pairs.sort()
+    return pairs
+
+
+def step_keys(pairs: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    """Breakpoints of the piecewise-linear path through the integer mapping: a key wherever the slope
+    (segment speed) changes, plus the first and the last point. Inside a constant-lag run the speed is
+    100 %; a lag change costs one short segment (50 % over 2 frames, or 200 % over 1 frame)."""
+    if len(pairs) < 2:
+        return list(pairs)
+    keys = [pairs[0]]
+    for i in range(1, len(pairs) - 1):
+        (q0, s0), (q1, s1), (q2, s2) = pairs[i - 1], pairs[i], pairs[i + 1]
+        if (s1 - s0) * (q2 - q1) != (s2 - s1) * (q1 - q0):
+            keys.append(pairs[i])
+    keys.append(pairs[-1])
+    return keys
+
+
+def pieces_of(pairs: List[Tuple[int, int]]) -> List[Dict[str, object]]:
+    """Runs of constant offset (source − sequence) → the cut-and-slip pieces; a gap in the sequence
+    (lag increase on a slowed layer) is covered by extending the previous piece by one frame."""
+    out: List[Dict[str, object]] = []
+    for seq, srcf in pairs:
+        o = srcf - seq
+        if out and out[-1]["offset_frames"] == o:
+            out[-1]["seq_frames"][1] = seq
+        else:
+            out.append({"offset_frames": o, "seq_frames": [seq, seq]})
+    for k in range(len(out) - 1):
+        nxt = out[k + 1]["seq_frames"][0]
+        gap = nxt - out[k]["seq_frames"][1] - 1
+        out[k]["repeat_frames"] = gap
+        out[k]["seq_frames"][1] = nxt - 1
+    if out:
+        out[-1]["repeat_frames"] = 0
+    return out
+
+
 def cmd_time_plan(a: argparse.Namespace) -> None:
     tm = load_json(a.time)
     fps = a.fps
     lag = tm["lag"]
     pts = tm["points"]
+    active = tm.get("active_frames") or len(lag)
     rs = a.range_start if a.range_start is not None else a.clip_start
-    # route B: speed keyframes on the moving clip — media frame plays at sequence time
-    remap = []
     retime_ref = a.retime == "ref"
-    for p in pts:
-        if retime_ref:
-            # the reference layer gets the speed keys: its frame ref_frame must play when the moving
-            # layer shows mov_frame (the moving layer keeps its own time)
-            src = a.clip_in + (p["ref_frame"] + a.mov_first_frame) / fps
-            seq_t = rs + p["mov_frame"] / fps
-        else:
-            src = a.clip_in + (p["mov_frame"] + a.mov_first_frame) / fps
-            seq_t = rs + p["ref_frame"] / fps
-        remap.append({"source_seconds": round(src, 6), "sequence_seconds": round(seq_t, 6), "ref_frame": p["ref_frame"],
-                      "mov_frame": p["mov_frame"]})
+    first_src = a.clip_in + a.mov_first_frame / fps
+
+    def seq_s(i: float) -> float:
+        return round(rs + i / fps, 6)
+
+    def src_s(i: float) -> float:
+        return round(first_src + i / fps, 6)
+
+    pairs = frame_mapping(lag, retime_ref, active)
+    # route B keys. "step" (default): a key at every lag change — exact frames, speeds 100/50/200 %.
+    # "ramp": a key per coincidence point with the averaged speed between them (kept for comparison;
+    # it misplaces up to half the frames between two keys by one frame).
+    if a.route == "ramp":
+        remap = []
+        for p in pts:
+            seq_i, src_i = (p["mov_frame"], p["ref_frame"]) if retime_ref else (p["ref_frame"], p["mov_frame"])
+            remap.append({"source_seconds": src_s(src_i), "sequence_seconds": seq_s(seq_i), "seq_frame": seq_i, "src_frame": src_i,
+                          "ref_frame": p["ref_frame"], "mov_frame": p["mov_frame"]})
+    else:
+        remap = []
+        for seq_i, src_i in step_keys(pairs):
+            ref_i, mov_i = (src_i, seq_i) if retime_ref else (seq_i, src_i)
+            remap.append({"source_seconds": src_s(src_i), "sequence_seconds": seq_s(seq_i), "seq_frame": seq_i, "src_frame": src_i,
+                          "ref_frame": ref_i, "mov_frame": mov_i})
     # keep the host's constraints: both strictly increasing by ≥ 1 frame, speeds 10–1000 %
     kept = []
     for r in remap:
@@ -729,48 +794,63 @@ def cmd_time_plan(a: argparse.Namespace) -> None:
                      or r["sequence_seconds"] - kept[-1]["sequence_seconds"] < 0.999 / fps):
             continue
         kept.append(r)
-    prev_src, prev_seq = a.clip_in + a.mov_first_frame / fps, a.clip_start
+    prev_src, prev_seq = first_src, a.clip_start
     for r in kept:
         ds_, dq = r["source_seconds"] - prev_src, r["sequence_seconds"] - prev_seq
         r["segment_speed_pct"] = round(100 * ds_ / dq, 2) if dq > 0 else None
         prev_src, prev_seq = r["source_seconds"], r["sequence_seconds"]
     # drop the first point when it is just «100 % from the clip start» (no key needed there)
-    if kept and kept[0]["ref_frame"] == 0 and abs((kept[0]["segment_speed_pct"] or 100) - 100) < 1e-6 and len(kept) > 1:
-        first = kept.pop(0)
-        kept[0]["segment_speed_pct"] = round(100 * (kept[0]["source_seconds"] - a.clip_in - a.mov_first_frame / fps)
+    if kept and kept[0]["seq_frame"] == 0 and abs((kept[0]["segment_speed_pct"] or 100) - 100) < 1e-6 and len(kept) > 1:
+        kept.pop(0)
+        kept[0]["segment_speed_pct"] = round(100 * (kept[0]["source_seconds"] - first_src)
                                              / (kept[0]["sequence_seconds"] - a.clip_start), 2)
     speeds = [r["segment_speed_pct"] for r in kept if r["segment_speed_pct"] is not None]
     ok = all(10 <= s <= 1000 for s in speeds)
-    # route A: cuts + slip per constant-lag run
+    # route A: cuts + slip per constant-offset piece of the retimed clip. slip_frames = source − sequence:
+    # positive → the piece shows later media (in-point moves later by that many frames).
     cuts = []
-    for run in tm["runs"]:
-        s, e = run["frames"]
-        cuts.append({"ref_frames": [s, e], "sequence_seconds": [round(rs + s / fps, 6), round(rs + (e + 1) / fps, 6)],
-                     "slip_frames": run["lag"], "slip_seconds": round(run["lag"] / fps, 6)})
-    # After Effects: Time Remap keyframes (comp time → source time) incl. first and last frame
+    for pc in pieces_of(pairs):
+        q0, q1 = pc["seq_frames"]
+        cuts.append({"seq_frames": [q0, q1], "sequence_seconds": [seq_s(q0), seq_s(q1 + 1)],
+                     "slip_frames": pc["offset_frames"], "slip_seconds": round(pc["offset_frames"] / fps, 6),
+                     "repeat_frames": pc["repeat_frames"],
+                     "ref_frames": [q0, q1] if not retime_ref else [q0 + pc["offset_frames"], q1 + pc["offset_frames"]]})
+    # After Effects: Time Remap keyframes (comp time → source time) — the same step keys, incl. first/last
     ae = [{"time": r["sequence_seconds"], "value": r["source_seconds"]} for r in remap]
     hold = tm.get("hold")
     hold_plan = None
     trim = None
-    if retime_ref and pts:
-        last = pts[-1]
+    if retime_ref and pairs:
+        last_seq, last_src = pairs[-1]
         trim = {"why": "the reference layer's frozen tail is not needed: after its last matched frame the clip is cut",
-                "sequence_seconds": round(rs + (last["mov_frame"] + 1) / fps, 6), "last_source_frame": last["ref_frame"],
+                "sequence_seconds": seq_s(last_seq + 1), "last_source_frame": last_src,
                 "premiere": "set the clip's out point / trim_clip_end at sequence_seconds (the moving layer keeps its length)"}
     elif hold:
-        hold_plan = {"sequence_seconds_from": round(rs + hold["ref_from_frame"] / fps, 6),
+        hold_plan = {"sequence_seconds_from": seq_s(hold["ref_from_frame"]),
                      "mov_frame": hold["mov_frame_to_hold"],
-                     "source_seconds": round(a.clip_in + (hold["mov_frame_to_hold"] + a.mov_first_frame) / fps, 6),
+                     "source_seconds": src_s(hold["mov_frame_to_hold"]),
                      "premiere": "freeze_frame on the moving clip at that sequence time (or a last speed key to 0 % is not available — use freeze_frame)",
                      "after_effects": "Time Remap: hold keyframe at sequence_seconds_from with value source_seconds"}
+    expected = [{"seq_frame": q, "src_frame": s} for q, s in pairs]
     out = {"version": VERSION, "fps": fps, "clip_start": a.clip_start, "clip_in": a.clip_in, "range_start": rs,
-           "retime": a.retime, "route_default": "remap", "remap_points": kept, "remap_speeds_ok": ok, "trim": trim,
+           "retime": a.retime, "route": a.route,
+           "route_default": "cut_and_slip",
+           "route_note": "Premiere: route A (cut_and_slip) is frame-exact; route B (time_remap_ui_points, step keys) is exact "
+                         "inside runs and lands one frame per lag change on a half frame (the host picks a neighbour); "
+                         "ramp keys (one per coincidence point) are not frame-exact — do not use them for sync",
+           "remap_points": kept, "remap_speeds_ok": ok, "trim": trim,
            "time_remap_ui_points": [{"source_seconds": r["source_seconds"], "sequence_seconds": r["sequence_seconds"]} for r in kept],
            "cut_and_slip": cuts, "ae_time_remap_keys": ae, "hold": hold_plan,
+           "expected_mapping": expected,
            "summary": tm.get("summary"),
-           "table": [f"ref {r['ref_frame']:3d} ← mov {r['mov_frame']:3d}  seq {r['sequence_seconds']:.3f}s  src {r['source_seconds']:.3f}s  speed {r['segment_speed_pct']}" for r in kept]}
+           "table": [f"seq {r['seq_frame']:3d} → src {r['src_frame']:3d}  (ref {r['ref_frame']:3d} / mov {r['mov_frame']:3d})  "
+                     f"seq {r['sequence_seconds']:.3f}s  src {r['source_seconds']:.3f}s  speed {r['segment_speed_pct']}" for r in kept],
+           "cut_table": [f"piece {k}: seq {c['seq_frames'][0]:3d}–{c['seq_frames'][1]:3d}  {c['sequence_seconds'][0]:.3f}–{c['sequence_seconds'][1]:.3f}s  "
+                         f"slip {c['slip_frames']:+d} fr" + (f"  (+{c['repeat_frames']} repeated)" if c["repeat_frames"] else "")
+                         for k, c in enumerate(cuts)]}
     save_json(a.out, out)
-    print(json.dumps({"points": len(kept), "speeds_pct": speeds, "speeds_ok": ok, "cuts": len(cuts), "hold": hold_plan, "file": a.out}))
+    print(json.dumps({"route": a.route, "keys": len(kept), "speeds_pct": speeds, "speeds_ok": ok, "cuts": len(cuts),
+                      "hold": hold_plan, "trim": trim and trim["sequence_seconds"], "file": a.out}))
 
 
 # ----------------------------------------------------------------------------- global-fit
@@ -1271,6 +1351,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--clip-in", type=float, default=0.0, help="media time (s) of the moving clip's first frame")
     p.add_argument("--range-start", type=float, help="sequence time (s) of reference frame 0 (default clip-start)")
     p.add_argument("--mov-first-frame", type=int, default=0, help="media frame index of moving frame 0 relative to clip-in")
+    p.add_argument("--route", choices=("step", "ramp"), default="step",
+                   help="speed keys: step (default — a key at every lag change, frame-exact 100/50/200 %%) or ramp (one key per coincidence point, averaged speeds; not frame-exact)")
     p.add_argument("--retime", choices=("mov", "ref"), default="mov",
                    help="which clip gets the speed keys: mov (default — the moving layer follows the reference) or ref (the reference layer, e.g. the generation, is slowed onto the plate's time; clip-start/clip-in then describe that clip, the frozen tail is trimmed)")
     p.add_argument("--out", required=True)

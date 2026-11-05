@@ -34,16 +34,22 @@ area start + i/fps). Raw footage frames instead: `conform.py frames --video` and
    A warning «moving layer has N frames … forced» = the moving export is too short: render `max lag`
    more frames and match again.
 3. `conform.py time-plan --time S/time.json --fps <comp fps> --clip-start <moving layer inPoint s> --clip-in <moving layer source start s> --out S/plan.json`
-   → `ae_time_remap_keys` = `{time, value}` pairs, comp time → source time.
+   → `ae_time_remap_keys` = `{time, value}` pairs, comp time → source time — **step keys**: a key at
+   every lag change (100 % inside a run, 200 % or 50 % over the one frame where the lag steps), so the
+   linear interpolation between keys reproduces the measured staircase frame for frame. `expected_mapping`
+   lists the comp frame → source frame pairs to check against. (`--route ramp` — one key per coincidence
+   point with the averaged speed — is not frame-exact: up to half the frames between two keys show the
+   neighbouring source frame; it desynced shot 850 in Premiere on 05.11. Do not use it for sync.)
 4. Apply on the moving layer: `layer.set_props {layer, props:{timeRemapEnabled:true}}` → remove the
    two default keys and author the plan in one call:
    `keyframe.set_batch {comp, layer, property:["ADBE Time Remapping"], times:[…], values:[…]}` (linear
-   interpolation between keys = the segment speeds). `hold` set → add a key at
-   `hold.sequence_seconds_from` with value `hold.source_seconds` and make it a HOLD key
-   (`keyframe.set_interpolation`), and extend the layer's out point if the comp range is longer.
+   interpolation; Frame Blending off on the layer, so each comp frame shows one source frame). `hold`
+   set → add a key at `hold.sequence_seconds_from` with value `hold.source_seconds` and make it a HOLD
+   key (`keyframe.set_interpolation`), and extend the layer's out point if the comp range is longer.
    Show the plan table to the user before writing.
-5. Verify: render the moving layer alone again → `conform.py verify --ref REF/ --mov MOV2/ --check-time --report S/t8.json`:
-   `time_lost_frames` must be empty (every frame beats its neighbours ±2; ties listed).
+5. Verify **every frame**: render the moving layer alone again → `conform.py verify --ref REF/ --mov MOV2/ --check-time --every 1 --report S/t8.json`:
+   `time_lost_frames` must be empty (every frame beats its neighbours ±2; ties at repeated frames listed).
+   Checking the key frames alone proves nothing — they are exact by construction.
 
 ## 3. Geometry
 
