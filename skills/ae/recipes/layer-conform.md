@@ -28,6 +28,10 @@ area start + i/fps). Raw footage frames instead: `conform.py frames --video` and
 
 ## 2. Time
 
+Keep every frame export, plan and report of this work in the session's own temporary working folder
+(deleted with the session), one subfolder per purpose — never in the user's repositories, media or
+project folders; renders meant for the user go next to the project.
+
 1. `conform.py coarse-fit --ref REF/ --mov MOV/ --out S/ --frames 0,2,4,6` (the start of the shot, lag still 0).
 2. `conform.py time-match --ref REF/ --mov MOV/ --out S/ --geom S/coarse.json --lag-min -3 --lag-max 10`
    → `S/time.json` (`lag`, `runs`, `points`, `segments`, `frozen_tail_*`, `hold`, `warnings`).
