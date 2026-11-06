@@ -6,12 +6,13 @@ Let an AI assistant (Claude Desktop, Cursor, ChatGPT, Google Antigravity or any 
 inside your running **Adobe After Effects**: read the project, build and edit comps, layers,
 effects, keyframes, text, masks and expressions, render check frames — from plain language.
 
-**Every Adobe UI language · a large skills library · built for AI and generative features.** AfterEffects-MCP-IMT works with every UI language Adobe ships, comes with a large skills library and is built for Adobe's AI and generative features — Roto Brush and Object Matte, Content-Aware Fill, generated image sources animated as native layers.
+**Every Adobe UI language · vision: mattes and time by sight · a large skills library · built for AI and generative features.** AfterEffects-MCP-IMT works with every UI language Adobe ships, and the agent sees the frame: it renders frames and looks at them, draws Object Matte on what it sees — a lasso around each person to keep, ⊕ / ⊖ points for what the matte missed or caught — reads the strokes back and checks a preview that marks the gaps and every person it was told to keep (macOS); it syncs an AI-generated layer with the plate frame by frame — finds the matching frame for every frame, then cuts and shifts the layer so each lands on it — and checks every frame. After Effects' scripting has no API for Object Matte strokes, none of the other After Effects MCP servers we compared draws them, and Adobe's own AI Assistant for After Effects (beta) sees a single frame and writes scripts it does not run. It comes with a large skills library and is built for Adobe's AI and generative features — Roto Brush and Object Matte, Content-Aware Fill, generated image sources animated as native layers.
 
 Two parts, made to work together:
 
 - **The MCP server** — ~270 small, safe operations behind two tools, with a dry run, one undo
-  group per call, checkpoints, a project lock and honest errors.
+  group per call, checkpoints, a project lock and honest errors; **Object Matte by sight** on macOS
+  (`ae_object_matte_ui` drives After Effects' own Object Matte tool — there is no API for its strokes).
 - **The skill** (`skills/ae`) — what the agent should _know_: the order of work, what a script
   cannot do in After Effects and how to get around it safely, step-by-step recipes (camera
   tracking, 3D content on footage, plug-in tests, render, motion graphics, masks), and plug-in
@@ -120,7 +121,41 @@ What to forbid on the client side, if you gate at all: what Cmd+Z cannot revert 
 `project.new / open / revert`, the purge/consolidate operations, `pref.*`, `render.start`. The list
 and a reference implementation are in [`docs/AGENT-POLICY.md`](docs/AGENT-POLICY.md).
 
-## How the agent sees the project
+## How the agent sees
+
+Adobe gives outside agents no picture: its scripting returns a project's structure, not its pixels;
+its own connector for AI assistants ([Adobe for creativity](https://blog.adobe.com/en/publish/2026/04/28/adobe-for-creativity-connector)) does not cover After Effects;
+and the [After Effects AI Assistant](https://community.adobe.com/announcements-532/new-in-after-effects-beta-after-effects-ai-assistant-1635658) (beta) sees «a single screenshot of a single frame» and
+does not run the scripts it writes.
+
+AfterEffects-MCP-IMT gives the agent two kinds of sight. **The model's:** every frame it needs comes back as an image —
+`ae_render_frame` for the comp, a solo render of one layer for a matte — and the model decides from
+the picture what to do and where. **The server's:** where After Effects has no scripting API (Object
+Matte strokes are mouse strokes in the Layer panel, nothing else), the server looks at After Effects
+itself — it captures the window, finds the picture in the Layer panel, maps the model's picture
+coordinates onto the screen and acts with real mouse events, then looks again to confirm.
+
+**Object Matte by sight** (`ae_object_matte_ui`, macOS, AE 26):
+
+1. The layer is rendered solo at the chosen time; the model answers in picture coordinates — a
+   closed lasso around each person or object to keep, ⊕ points for what the matte missed, ⊖ for
+   what it caught by mistake.
+2. The server opens the layer, selects the Object Matte tool by its internal tool code (not by a
+   hotkey or a localized name), draws lassos first and points after them, and finds the picture
+   again after every stroke — After Effects shifts the view while it computes.
+3. The strokes are read back from the effect; a preview renders the matte over the frame, marks the
+   holes inside the subject, and checks every person the model named at head, body and feet.
+4. The model fixes what the preview shows with more ⊕ / ⊖ strokes. For a matte that will cut an
+   AI-generated layer, the edge is then pulled inside the silhouette (Shift Edge, Feather) by the
+   effect's internal property names — After Effects shows two groups with the same labels.
+
+**Time by sight** (`recipes/layer-conform.md`): an AI-generated layer drifts against the plate —
+repeated, dropped and frozen frames. Frames of both are rendered and compared one by one, the best
+match is chosen for every frame (`scripts/conform.py refine-cuts`, repeats and drops included), and
+the layer is cut into pieces and each piece shifted so every frame lands on its match — cuts only:
+a speed between two points would blend frames. Then every frame is checked again.
+
+**Everything else the agent reads as data:**
 
 - **`ae_project_info` / `ae_comp_info` / `ae_layer_info`** — the full picture when needed.
 - **`comp.snapshot` → edit → `comp.diff`** — a cheap fingerprint before and after: which layers
@@ -154,13 +189,14 @@ open MIT skill sets; they are fetched, not bundled — run `skills/ae/fetch-vend
 
 ## Tools
 
-| Tool                                                                                    | Purpose                                                                             |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `ae_catalog` / `ae_do`                                                                  | discover the operations (24 categories) and run one — or several in one `batch.run` |
-| `ae_project_info` / `ae_comp_info` / `ae_layer_info` / `ae_version_info` / `ae_context` | read                                                                                |
-| `ae_render_frame`                                                                       | one frame as PNG (viewer-accurate colour; `compareWith` for metrics)                |
-| `ae_save_project`, `ae_project_export_json` / `ae_project_import_json`                  | save; whole-project JSON round trip                                                 |
-| `ae_dialogs`                                                                            | see and dismiss the modal dialogs that block scripting                              |
+| Tool                                                                                    | Purpose                                                                                                                       |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ae_catalog` / `ae_do`                                                                  | discover the operations (24 categories) and run one — or several in one `batch.run`                                           |
+| `ae_project_info` / `ae_comp_info` / `ae_layer_info` / `ae_version_info` / `ae_context` | read                                                                                                                          |
+| `ae_render_frame`                                                                       | one frame as PNG (viewer-accurate colour; `compareWith` for metrics)                                                          |
+| `ae_object_matte_ui`                                                                    | Object Matte by sight (macOS): lassos and ⊕ / ⊖ points from a rendered frame, strokes read back, a preview of gaps and people |
+| `ae_save_project`, `ae_project_export_json` / `ae_project_import_json`                  | save; whole-project JSON round trip                                                                                           |
+| `ae_dialogs`                                                                            | see and dismiss the modal dialogs that block scripting                                                                        |
 
 Full list with parameters: [`docs/TOOLS.md`](docs/TOOLS.md); the operations are listed by
 `ae_catalog` at runtime.
@@ -185,6 +221,13 @@ operations, checkpoints and a project lock, honest errors, an installer that say
 and a skill that teaches the agent the parts of After Effects no API covers — on any UI language
 After Effects ships, where most servers stop at the English one. Verified on AE 2026, macOS and
 Windows.
+
+How the After Effects agents compare on vision — as of 2026-11-06:
+
+|                                       | AfterEffects-MCP-IMT                                                                                                                                                     | [mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) (upstream) | [JUNKDOGE-JOE/after-effects-mcp](https://github.com/JUNKDOGE-JOE/after-effects-mcp) | [Engine-Room-Games/after-effects-mcp](https://github.com/Engine-Room-Games/after-effects-mcp) | [After-Effects-mcp-pro](https://github.com/malkawi06/After-Effects-mcp-pro) | [after-effects-mcp-vision](https://github.com/VolksRat71/after-effects-mcp-vision) | [Adobe AI Assistant](https://community.adobe.com/announcements-532/new-in-after-effects-beta-after-effects-ai-assistant-1635658) (beta) | [Filmit MCP](https://filmit.io/mcp/) (commercial) |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Frames returned to the model          | comp frames and solo layer renders                                                                                                                                       | yes                                                                                | yes                                                                                 | yes                                                                                           | yes, and window screenshots                                                 | yes                                                                                | a single screenshot of a single frame                                                                                                   | yes, when the model asks                          |
+| Vision: acting on what the agent sees | Object Matte drawn on what it sees — lassos, ⊕ / ⊖ points, strokes read back, a preview of gaps and people (macOS); a generated layer synced to the plate frame by frame | no                                                                                 | no                                                                                  | no                                                                                            | no — Roto Brush «only through screen control»                               | mask paths from a separate SAM app, not Object Matte                               | writes scripts, does not run them; no Roto Brush or Object Matte in its help                                                            | masks listed; no Roto Brush or Object Matte       |
 
 ## Releases
 
