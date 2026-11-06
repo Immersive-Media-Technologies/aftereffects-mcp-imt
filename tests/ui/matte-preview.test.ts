@@ -178,13 +178,13 @@ describe("ae_object_matte_ui preview only", () => {
       async execute(req: EvalRequest): Promise<EvalResult> {
         calls.push(req);
         const base = {
-          ok: true,
+          ok: true as const,
           error: null,
           errorCode: null,
           stack: null,
-          logs: [],
+          logs: [] as string[],
           durationMs: 0,
-        } as const;
+        };
         if (req.label === "object_matte_preview") {
           await fs.writeFile(path.join(dir, "matte_1000.png"), mattePng);
           await fs.writeFile(path.join(dir, "plate_1000.png"), platePng);
