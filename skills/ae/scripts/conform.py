@@ -47,7 +47,7 @@ try:
 except ImportError:  # pragma: no cover
     sys.exit("conform.py needs opencv-python-headless and numpy: pip install opencv-python-headless numpy")
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 IMG_EXT = (".png", ".tif", ".tiff", ".jpg", ".jpeg", ".exr")
 
 
@@ -857,6 +857,153 @@ def cmd_time_plan(a: argparse.Namespace) -> None:
                       "hold": hold_plan, "trim": trim and trim["sequence_seconds"], "file": a.out}))
 
 
+# ----------------------------------------------------------------------------- refine-cuts
+
+def parse_layout(spec: str) -> List[Tuple[int, int]]:
+    """'0:0,9:8,22:20' → [(seq frame of the piece start, source frame shown there), …], ascending."""
+    out = []
+    for part in spec.split(","):
+        q, s = part.split(":")
+        out.append((int(q), int(s)))
+    return sorted(out)
+
+
+def mapping_from_layout(layout: List[Tuple[int, int]], n: int) -> List[int]:
+    """Source frame shown at every sequence frame 0..n−1 by a cut-and-slip layout."""
+    src = []
+    k = 0
+    for q in range(n):
+        while k + 1 < len(layout) and layout[k + 1][0] <= q:
+            k += 1
+        q0, s0 = layout[k]
+        src.append(s0 + (q - q0))
+    return src
+
+
+def layout_from_plan(plan: dict) -> List[Tuple[int, int]]:
+    """Piece starts of a time-plan's cut_and_slip (slip = source − sequence)."""
+    return [(int(c["seq_frames"][0]), int(c["seq_frames"][0]) + int(c["slip_frames"])) for c in plan["cut_and_slip"]]
+
+
+def refine_mapping(cur: List[int], rows: List[dict], repeat_pen: float = 0.01, drop_pen: float = 0.05,
+                   reach: int = 3) -> Tuple[List[int], Dict[Tuple[int, int], float]]:
+    """The best staircase from the verify scores of the layout as it was built.
+
+    verify (--ref GEN --mov PLATE --check-time) scored the generation frame at sequence t (source
+    cur[t]) against plate frames t+δ: each score is an observation «plate q ↔ source s». A monotone path
+    s(q) with steps 0 (the repeated frame), 1 or 2 (a dropped source frame — a duplicate the generator
+    made) maximises the observed scores; unobserved pairs count as the worst score seen — a source frame
+    the verified render never showed (e.g. after the last frame it reached) cannot be chosen with
+    confidence, so the result is exact only inside what was rendered. Returns the new mapping and the
+    observations."""
+    obs: Dict[Tuple[int, int], float] = {}
+    lo = 1.0
+    for r in rows:
+        t = int(r["t"])
+        if t >= len(cur) or "time" not in r:
+            continue
+        for d, v in r["time"]["scores"].items():
+            q = t + int(d)
+            if 0 <= q < len(cur):
+                key = (q, cur[t])
+                obs[key] = max(obs.get(key, -1.0), float(v))
+                lo = min(lo, float(v))
+    n = len(cur)
+    base = lo - 0.05
+    cands = [list(range(max(0, cur[q] - reach), cur[q] + reach + 1)) for q in range(n)]
+    score = [[obs.get((q, s), base) for s in cands[q]] for q in range(n)]
+    best = [score[0][:]]
+    back: List[List[int]] = [[-1] * len(cands[0])]
+    for q in range(1, n):
+        row, bk = [], []
+        for j, s in enumerate(cands[q]):
+            b, bi = -1e9, -1
+            for i, sp in enumerate(cands[q - 1]):
+                step = s - sp
+                if step not in (0, 1, 2):
+                    continue
+                v = best[q - 1][i] - (repeat_pen if step == 0 else drop_pen if step == 2 else 0.0)
+                if v > b:
+                    b, bi = v, i
+            row.append(b + score[q][j])
+            bk.append(bi)
+        best.append(row)
+        back.append(bk)
+    j = max(range(len(best[-1])), key=lambda k: best[-1][k])
+    path = [0] * n
+    for q in range(n - 1, -1, -1):
+        path[q] = cands[q][j]
+        j = back[q][j]
+    return path, obs
+
+
+def layout_from_mapping(src: List[int]) -> List[Dict[str, int]]:
+    """Pieces of constant offset (source − sequence): start, in-frame, repeated/dropped frames at the start."""
+    pieces: List[Dict[str, int]] = []
+    for q, s in enumerate(src):
+        if pieces and s - q == pieces[-1]["offset"]:
+            pieces[-1]["seq_end"] = q
+            continue
+        step = s - src[q - 1] if q else 1
+        pieces.append({"seq_start": q, "seq_end": q, "src_start": s, "offset": s - q,
+                       "repeat_at_start": int(step == 0), "dropped_before": max(0, step - 1)})
+    return pieces
+
+
+def cmd_refine_cuts(a: argparse.Namespace) -> None:
+    rep = load_json(a.verify)
+    rows = [r for r in rep["frames"] if "time" in r]
+    n = a.count or (max(int(r["t"]) for r in rows) + 1)
+    if a.plan:
+        layout = layout_from_plan(load_json(a.plan))
+    elif a.layout:
+        layout = parse_layout(a.layout)
+    else:
+        raise SystemExit("give --plan plan.json or --layout 'seq:src,…' (the layout the verified render was built with)")
+    cur = mapping_from_layout(layout, n)
+    new, obs = refine_mapping(cur, rows, a.repeat_pen, a.drop_pen)
+    fps = a.fps
+
+    def best_obs(q: int) -> Optional[int]:
+        c = [(v, s) for (qq, s), v in obs.items() if qq == q]
+        return max(c)[1] if c else None
+
+    pieces = layout_from_mapping(new)
+    old_pieces = layout_from_mapping(cur)
+    lost_before = [r["t"] for r in rows if not r["time"]["wins"]]
+    # frames where the new mapping still disagrees with the best observation (beyond the repeats)
+    disagree = [q for q in range(n) if best_obs(q) is not None and best_obs(q) != new[q]]
+    moved = []
+    old_starts = {p["seq_start"]: p for p in old_pieces}
+    for p in pieces:
+        if p["seq_start"] not in old_starts:
+            moved.append(p["seq_start"])
+    cuts = []
+    for k, p in enumerate(pieces):
+        q0, q1 = p["seq_start"], p["seq_end"]
+        cuts.append({"seq_frames": [q0, q1],
+                     "sequence_seconds": [round(a.clip_start + q0 / fps, 6), round(a.clip_start + (q1 + 1) / fps, 6)],
+                     "in_frame": p["src_start"], "source_seconds_at_start": round(a.clip_in + p["src_start"] / fps, 6),
+                     "slip_frames": p["offset"], "repeat_at_start": p["repeat_at_start"], "dropped_before": p["dropped_before"]})
+    ae_pieces = [{"in_point": c["sequence_seconds"][0], "out_point": c["sequence_seconds"][1],
+                  "start_time_shift_seconds": round(-c["slip_frames"] / fps, 6), "slip_frames": c["slip_frames"]} for c in cuts]
+    out = {"version": VERSION, "fps": fps, "frames": n, "layout_before": [[p["seq_start"], p["src_start"]] for p in old_pieces],
+           "layout_after": [[p["seq_start"], p["src_start"]] for p in pieces],
+           "changed": [[p["seq_start"], p["src_start"]] for p in old_pieces] != [[p["seq_start"], p["src_start"]] for p in pieces],
+           "new_piece_starts": moved, "lost_frames_before": lost_before, "disagree_after": disagree,
+           "mapping_after": [{"seq_frame": q, "src_frame": s} for q, s in enumerate(new)],
+           "cut_and_slip": cuts, "ae_pieces": ae_pieces,
+           "cut_table": [f"piece {k}: seq {c['seq_frames'][0]:3d}–{c['seq_frames'][1]:3d}  {c['sequence_seconds'][0]:.3f}–{c['sequence_seconds'][1]:.3f}s  "
+                         f"in-frame {c['in_frame']:3d}  slip {c['slip_frames']:+d} fr"
+                         + ("  (repeated frame at the start)" if c["repeat_at_start"] else "")
+                         + (f"  ({c['dropped_before']} source frame(s) cut before — duplicates)" if c["dropped_before"] else "")
+                         for k, c in enumerate(cuts)]}
+    save_json(a.out, out)
+    print(json.dumps({"changed": out["changed"], "layout_before": out["layout_before"], "layout_after": out["layout_after"],
+                      "lost_frames_before": lost_before, "disagree_after": disagree, "cut_table": out["cut_table"], "file": a.out},
+                     ensure_ascii=False))
+
+
 # ----------------------------------------------------------------------------- global-fit
 
 def pieces_from(a: argparse.Namespace, tm: Optional[dict], nt: int) -> List[Tuple[int, int]]:
@@ -1361,6 +1508,19 @@ def build_parser() -> argparse.ArgumentParser:
                    help="which clip gets the speed keys: mov (default — the moving layer follows the reference) or ref (the reference layer, e.g. the generation, is slowed onto the plate's time; clip-start/clip-in then describe that clip, the frozen tail is trimmed)")
     p.add_argument("--out", required=True)
     p.set_defaults(func=cmd_time_plan)
+
+    p = sub.add_parser("refine-cuts", help="move the cuts so every frame is native: from a verify --check-time report of the built layout")
+    p.add_argument("--verify", required=True, help="verify report (--ref GEN --mov PLATE --check-time --every 1) of the render built with the layout")
+    p.add_argument("--plan", help="time-plan JSON the layout was built from (cut_and_slip)")
+    p.add_argument("--layout", help="or the layout as built: 'seq_start:source_frame,…' (e.g. 0:0,9:8,22:20)")
+    p.add_argument("--fps", type=float, required=True)
+    p.add_argument("--clip-start", type=float, default=0.0, help="sequence/comp seconds of sequence frame 0")
+    p.add_argument("--clip-in", type=float, default=0.0, help="source seconds of source frame 0")
+    p.add_argument("--count", type=int, help="sequence frames (default: from the report)")
+    p.add_argument("--repeat-pen", type=float, default=0.01)
+    p.add_argument("--drop-pen", type=float, default=0.05)
+    p.add_argument("--out", required=True)
+    p.set_defaults(func=cmd_refine_cuts)
 
     p = sub.add_parser("global-fit", help="affine per frame → Motion constants or keys per piece (Stage G0)")
     common(p)

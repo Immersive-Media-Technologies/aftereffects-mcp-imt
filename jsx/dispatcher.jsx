@@ -496,7 +496,12 @@
             if (foreignJsonBroken()) {
                 var jsonNote = "a foreign JSON object in ExtendScript does not decode escapes (another panel replaced"
                     + " JSON.parse; com.fossa.tether does) - ae-mcp used its own for this call";
-                logs.push(jsonNote);
+                // 06.11: the note once per AE session, not on every call — 170 calls of one chat carried it
+                // 170 times into the model's context
+                if (!$.global.__aeMcpJsonNoted) {
+                    $.global.__aeMcpJsonNoted = true;
+                    logs.push(jsonNote + " (reported once per session)");
+                }
                 appendLog("WARN: " + jsonNote);
             }
             prevGlobalJson = $.global.JSON;

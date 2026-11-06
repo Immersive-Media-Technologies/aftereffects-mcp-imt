@@ -5,9 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-11-06
 
 ### Added
+
+- **Layer conform: `conform.py refine-cuts` (engine 1.2.0) and the matte inside the silhouette.** The per-frame
+  check (`verify --check-time`) of the built layout is turned into moved cuts: a monotone path over the
+  observed scores puts every repeated frame where the plate needs it and cuts the generator's duplicate
+  frames (`dropped_before`); a run of lost frames is no longer accepted. On shot 850 it moved the last two
+  repeats 3 and 5 frames later (double heads at 2.46–3.08 s gone). The recipe sets the matte of a plate
+  over an AI generation 8–12 px inside the silhouette with feather 4 (Object Matte Shift Edge negative,
+  measured with `mask-measure`) — only for that task.
+
+- **`ae_object_matte_ui` — Object Matte by sight (macOS).** After Effects 26's Object Matte has no
+  scripting API for selections; the tool clicks it like a user: the agent names points and lassos in the
+  pixels of a frame it rendered (comp pixels, converted with the layer's transform), the tool opens the
+  layer in the Layer panel, finds the picture on a window capture, selects the Object Matte tool, clicks
+  (Shift adds, Option subtracts) and drags lassos with real mouse events, then reads back every stroke the
+  effect recorded (Selections — positions in layer pixels) and reports how far each landed from its
+  target; a click that recorded nothing is a failure. `propagate_to` steps the comp time frame by frame so
+  AE carries the matte through the shot. Recipe: `skills/ae/recipes/masks-roto.md` — whole subjects and
+  the ground first, fragments, subtract only the excess with a tight lasso, propagation, frame checks with
+  the face priority. Facts from a live spike on AE 26.5 (05.11.2026).
+- **Object Matte preview — the tool shows what it made and never calls it a success.** After its actions
+  (or alone, with only `preview_times` — no UI) `ae_object_matte_ui` renders the layer solo and returns the
+  result as images: on top the matte over black, below the frame with the excluded parts washed red (the
+  frame is rendered once more with the effect switched off; solo states and the switch are restored in one
+  undo group), plus the matte's pieces with comp-pixel boxes; `preview_region` zooms into a group,
+  `preview_dir` keeps the PNGs. The result says `verified: false` with a per-person check to do on the
+  images. The preview points at what the eye misses: cyan numbered boxes on the gaps wedged between kept
+  pieces (closing of the matte minus the matte — where people half hidden behind others, lying on the
+  ground or deep in a group are usually left out; `gap_radius`), and the agent's checklist `people`
+  (a head / body / feet point per person, comp pixels) marked green inside the matte or yellow outside,
+  with whole / partial / missing per person. The PNG decoder reads alpha and can downscale and crop in one pass (`decodePngScaled`), so a
+  4.6K frame is never held at full size.
 
 - **Layer conform recipe and engine** (`skills/ae/recipes/layer-conform.md`, `skills/ae/scripts/conform.py`):
   how to make an AI-generated layer coincide with the plate before compositing — time first (Time Remap
@@ -27,6 +58,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   interpolation reproduces the measured staircase frame for frame; one key per coincidence point with
   an averaged speed (`--route ramp`) is documented as not frame-exact. Verify every frame (`--every 1`).
 - README in plain Markdown — Glama and other catalogs strip raw HTML: the «Add to Cursor» button, client icons now show there too.
+
+### Fixed
+
+- **`ae_object_matte_ui`: clicks after the first one landed ~25 layer px off.** The Layer panel's picture
+  shifted a few screen pixels once the first stroke created the effect, and the tool kept the old
+  rectangle. The picture is now found again after every action (`picture_moved` in the action's report).
+  Lassos run before points (a click in a crowd takes only a part of a person), and the descriptions say so.
+- **`ae_object_matte_ui` pressed Option+W blindly and landed on the wrong tool.** Option+W is the shortcut of
+  the Roto Brush tool group and cycles its members when one is active; with Object Matte already selected
+  the press switched to Quick Selection and a lasso took the whole frame. The tool now reads the active
+  tool (`Project.toolType`) and presses only until Object Matte's code (`tool_code`, default 161 on AE 26.5)
+  is active; the result reports the presses and the codes seen.
+- **The «foreign JSON» note is reported once per After Effects session**, not in every response — with
+  another panel's JSON in the engine, every call of a chat carried the same line into the model's context.
+- **`ae_object_matte_ui` result slimmed.** Every call repeated the whole stroke list (116 rows on a worked
+  matte) and the screen mapping — 113 K characters over one chat. Now: the new strokes by name in `actions`,
+  `strokes_total`, the mapping only with `dry_run`; the full list stays in `ae_layer_info`.
 
 ## [1.0.2] - 2026-10-28
 
@@ -481,6 +529,7 @@ Initial public release of `@kumoproductions/mcp-aftereffects`.
 
 - Importing a project whose footage is missing can misattribute layer parenting.
 
+[1.1.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.1.0
 [0.6.0]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.6.0
 [0.5.8]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.8
 [0.5.7]: https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v0.5.7

@@ -104,8 +104,10 @@ describe("e2e transport", () => {
       label: "smoke_logs",
     });
     expect(res.ok, `expected ok, got: ${res.error}`).toBe(true);
-    expect(res.logs).toHaveLength(2);
-    expect(res.logs[0]).toBe("step 1");
+    // ae-mcp's own diagnostics (a foreign JSON in the engine, 0.5.8) are not the user's breadcrumbs
+    const own = res.logs.filter((l) => !l.startsWith("a foreign JSON object"));
+    expect(own).toHaveLength(2);
+    expect(own[0]).toBe("step 1");
   });
 
   // NOTE: timeout & recovery tests live in timeout-recovery.test.ts — they

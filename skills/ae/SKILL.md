@@ -10,8 +10,8 @@ description_ru: |
   Открывать в начале любой задачи в Adobe After Effects через AfterEffects-MCP-IMT: гигиена проекта, что
   не умеет ExtendScript и обходы через UI, трекинг камеры, 3D-вставки, тесты плагинов, рендер, моушн-графика,
   маски, синхронизация слоёв. Это роутер: общие правила и карта рецептов — по задаче открывать её файл.
-version: 1.6.0
-changes: "1.6.0 (05.11): the map (§3) is in the skill-creator form — one entry per ability with «Read when …»; layer conform is a cut-only technique (the generated lower layer is split into pieces shifted by whole frames, the plate stays whole with the matte) with its trigger phrases; Time Remap stays a separate ability."
+version: 1.7.3
+changes: "1.7.3 (06.11): layer conform — the matte edge is set in the Object Matte group by matchName (/spatialsmoothing2 4, /rmshiftedges −8), not in the look-alike Refine Edge group; both groups read back into the report; the edge is a mandatory step and an acceptance condition. 1.7.2 (06.11): layer conform — refine-cuts from the per-frame check instead of accepting lost frames (a layout from Premiere is only a start); the matte for a plate over an AI generation sits inside the silhouette: feather 4, Shift Edge negative, inset measured 8–12 px. 1.7.1 (06.11): Object Matte — groups by lasso first (a click in a crowd takes only a part), the tool returns a preview image (matte over black + excluded parts in red) and never judges the matte; checks and the report only from the images. 1.7.0 (05.11): Object Matte by sight — ae_object_matte_ui and the masks-roto section (whole subjects, fragments, subtract only the excess, propagation, frame checks). 1.6.0 (05.11): the map (§3) is in the skill-creator form — one entry per ability with «Read when …»; layer conform is a cut-only technique (the generated lower layer is split into pieces shifted by whole frames, the plate stays whole with the matte) with its trigger phrases; Time Remap stays a separate ability."
 updated_at: 2026-11-05
 ---
 
@@ -115,16 +115,20 @@ task or a part of it — work by the general rules above and say so.
 - **Motion graphics** (titles, lower thirds, logo stings, infographics) — `recipes/motion-graphics.md`:
   the editable-comp method, the CONTROLS rig, Essential Graphics. Read when titles, graphics or an
   animated template are asked.
-- **Masks, track mattes, Roto Brush / Object Matte, alpha** — `recipes/masks-roto.md`: mask and matte
-  operations, roto propagation, alpha handling. Read when something must be cut out, matted, keyed or
-  roto'd.
+- **Masks, track mattes, Object Matte by sight, Roto Brush, alpha** — `recipes/masks-roto.md`: mask and matte
+  operations; cutting people or objects out of a plate with `ae_object_matte_ui` (groups of people outlined by lasso on a
+  rendered frame, fixes by sight on the preview image the tool returns, subtract only the excess, propagation,
+  frame checks and the report from the images, the face priority); Roto Brush; alpha handling. Read when something must be cut out, matted, keyed or roto'd —
+  «вырезать людей», «маска на людей», «ротоскоп», «маска по объекту», background replacement.
 - **Planar / point tracking in Mocha AE and the Tracker panel** — `recipes/tracking-mocha.md`: what to
   script, what the user does, reading tracks back. Read when a surface, screen insert or point track is
   asked.
 - **Layer conform — sync an AI-generated / edited layer with the original plate** — `recipes/layer-conform.md`:
   the generator model, the measuring engine `scripts/conform.py`, time by cutting the lower (generated)
   layer into pieces shifted by whole frames and the per-frame verify, Transform per piece, Levels on
-  the lower layer towards the upper, the matte on the upper (original) layer, report and acceptance.
+  the lower layer towards the upper, the matte on the upper (original) layer with its edge set inside
+  the silhouette (Object Matte group, feather 4, Shift Edge negative — a mandatory step, by matchName),
+  report and acceptance.
   Read when the user says «sync the layers / tracks», «conform the layers», «align the generation to
   the plate», «синхронизация видео дорожек», «подгонка видео дорожек», «совместить генерацию с
   исходником», «замена фона генерацией», or two layers of one shot double on the people.

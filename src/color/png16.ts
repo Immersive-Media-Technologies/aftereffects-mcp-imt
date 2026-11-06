@@ -9,8 +9,10 @@ import * as zlib from "node:zlib";
 export interface DecodedPng {
   width: number;
   height: number;
-  /** Row-major RGB triples, values normalized to 0..1. Alpha is dropped. */
+  /** Row-major RGB triples, values normalized to 0..1. Alpha is dropped here (see `alpha`). */
   rgb: Float64Array;
+  /** Alpha per pixel, 0..1 — only for PNGs that carry an alpha channel (gray+alpha, RGBA). */
+  alpha?: Float64Array;
   bitDepth: 8 | 16;
 }
 
@@ -60,8 +62,18 @@ function paeth(a: number, b: number, c: number): number {
   return pb <= pc ? b : c;
 }
 
-/** Decode a PNG into normalized RGB. Throws on interlaced or palette images. */
-export function decodePng(buf: Buffer): DecodedPng {
+interface PngMeta {
+  width: number;
+  height: number;
+  bitDepth: 8 | 16;
+  channels: number;
+}
+
+/**
+ * Unfilter the scanlines one by one and hand each to `onRow` (the row buffer is reused — read it
+ * inside the callback). Shared by the full decode and the downscaled one.
+ */
+function scanRows(buf: Buffer, onRow: (y: number, row: Buffer, meta: PngMeta) => void): PngMeta {
   const chunks = readChunks(buf);
   const ihdr = chunks.find((c) => c.type === "IHDR");
   if (!ihdr) throw new Error("PNG missing IHDR");
@@ -73,6 +85,7 @@ export function decodePng(buf: Buffer): DecodedPng {
   if (interlace !== 0) throw new Error("interlaced PNG is not supported");
   if (bitDepth !== 8 && bitDepth !== 16) throw new Error(`unsupported PNG bit depth ${bitDepth}`);
   const channels = channelsFor(colorType);
+  const meta: PngMeta = { width, height, bitDepth: bitDepth as 8 | 16, channels };
 
   const idat = Buffer.concat(chunks.filter((c) => c.type === "IDAT").map((c) => c.data));
   const raw = zlib.inflateSync(idat);
@@ -82,13 +95,8 @@ export function decodePng(buf: Buffer): DecodedPng {
   const stride = width * bytesPerPixel;
   if (raw.length < height * (stride + 1)) throw new Error("PNG pixel data truncated");
 
-  // Unfilter in place into `prev`/`cur` rows.
-  const rgb = new Float64Array(width * height * 3);
-  const maxVal = bitDepth === 16 ? 65535 : 255;
   const prev = Buffer.alloc(stride);
   const cur = Buffer.alloc(stride);
-  const grayish = channels <= 2;
-
   for (let y = 0; y < height; y++) {
     const rowStart = y * (stride + 1);
     const filter = raw[rowStart];
@@ -119,20 +127,111 @@ export function decodePng(buf: Buffer): DecodedPng {
       default:
         throw new Error(`unknown PNG filter ${filter} at row ${y}`);
     }
-    for (let x = 0; x < width; x++) {
-      const px = x * bytesPerPixel;
-      const out = (y * width + x) * 3;
-      for (let ch = 0; ch < 3; ch++) {
-        const srcCh = grayish ? 0 : ch;
-        const off = px + srcCh * bytesPerSample;
-        const v = bitDepth === 16 ? cur.readUInt16BE(off) : cur[off];
-        rgb[out + ch] = v / maxVal;
-      }
-    }
+    onRow(y, cur, meta);
     cur.copy(prev);
   }
+  return meta;
+}
 
-  return { width, height, rgb, bitDepth: bitDepth as 8 | 16 };
+/** Decode a PNG into normalized RGB (and alpha when present). Throws on interlaced or palette images. */
+export function decodePng(buf: Buffer): DecodedPng {
+  let rgb = new Float64Array(0);
+  let alpha: Float64Array | undefined;
+  const meta = scanRows(buf, (y, cur, m) => {
+    const { width, bitDepth, channels } = m;
+    if (y === 0) {
+      rgb = new Float64Array(width * m.height * 3);
+      if (channels === 2 || channels === 4) alpha = new Float64Array(width * m.height);
+    }
+    const bps = bitDepth / 8,
+      bpp = channels * bps,
+      maxVal = bitDepth === 16 ? 65535 : 255;
+    const grayish = channels <= 2;
+    for (let x = 0; x < width; x++) {
+      const px = x * bpp;
+      const out = (y * width + x) * 3;
+      for (let ch = 0; ch < 3; ch++) {
+        const off = px + (grayish ? 0 : ch) * bps;
+        rgb[out + ch] = (bitDepth === 16 ? cur.readUInt16BE(off) : cur[off]) / maxVal;
+      }
+      if (alpha) {
+        const off = px + (channels - 1) * bps;
+        alpha[y * width + x] = (bitDepth === 16 ? cur.readUInt16BE(off) : cur[off]) / maxVal;
+      }
+    }
+  });
+  const base = { width: meta.width, height: meta.height, rgb, bitDepth: meta.bitDepth };
+  return alpha ? { ...base, alpha } : base;
+}
+
+/**
+ * Decode and box-downscale by an integer `step` in one pass (optionally only inside `crop`, source pixels), without holding the full-size image —
+ * a 4.6K frame decoded in full is ~0.5 GB of doubles. Edge rows/columns that do not fill a whole box
+ * are dropped. `rgb` comes back premultiplied by alpha — the picture over black — and `alpha` is
+ * all ones when the PNG has no alpha channel.
+ */
+export function decodePngScaled(
+  buf: Buffer,
+  step: number,
+  crop?: { x: number; y: number; w: number; h: number },
+): DecodedPng & {
+  alpha: Float64Array;
+  step: number;
+  crop: { x: number; y: number; w: number; h: number };
+} {
+  const s = Math.max(1, Math.floor(step));
+  let W2 = 0,
+    H2 = 0;
+  let cx = 0,
+    cy = 0,
+    cw = 0,
+    ch0 = 0;
+  let rgb = new Float64Array(0),
+    alpha = new Float64Array(0);
+  const meta = scanRows(buf, (y, cur, m) => {
+    const { width, bitDepth, channels } = m;
+    if (y === 0) {
+      cx = Math.max(0, Math.min(width - 1, Math.round(crop?.x ?? 0)));
+      cy = Math.max(0, Math.min(m.height - 1, Math.round(crop?.y ?? 0)));
+      cw = Math.max(1, Math.min(width - cx, Math.round(crop?.w ?? width)));
+      ch0 = Math.max(1, Math.min(m.height - cy, Math.round(crop?.h ?? m.height)));
+      W2 = Math.max(1, Math.floor(cw / s));
+      H2 = Math.max(1, Math.floor(ch0 / s));
+      rgb = new Float64Array(W2 * H2 * 3);
+      alpha = new Float64Array(W2 * H2);
+    }
+    if (y < cy) return;
+    const oy = Math.floor((y - cy) / s);
+    if (oy >= H2) return;
+    const bps = bitDepth / 8,
+      bpp = channels * bps,
+      maxVal = bitDepth === 16 ? 65535 : 255;
+    const grayish = channels <= 2,
+      hasAlpha = channels === 2 || channels === 4;
+    const read = (off: number): number =>
+      (bitDepth === 16 ? cur.readUInt16BE(off) : cur[off]) / maxVal;
+    for (let ox = 0; ox < W2; ox++) {
+      const o = oy * W2 + ox;
+      for (let k = 0; k < s; k++) {
+        const px = (cx + ox * s + k) * bpp;
+        const a = hasAlpha ? read(px + (channels - 1) * bps) : 1;
+        for (let ch = 0; ch < 3; ch++) rgb[o * 3 + ch] += a * read(px + (grayish ? 0 : ch) * bps);
+        alpha[o] += a;
+      }
+    }
+  });
+  const n = s * s;
+  for (let i = 0; i < rgb.length; i++) rgb[i] /= n;
+  for (let i = 0; i < alpha.length; i++) alpha[i] /= n;
+  return {
+    width: W2,
+    height: H2,
+    rgb,
+    alpha,
+    bitDepth: meta.bitDepth,
+    step: s,
+    crop: { x: cx, y: cy, w: W2 * s, h: H2 * s },
+  };
 }
 
 function chunk(type: string, data: Buffer): Buffer {

@@ -68,8 +68,20 @@ project folders; renders meant for the user go next to the project.
 7. **Read back:** table of pieces (comp in/out, source frame at in = (inPoint − startTime) × fps)
    against `cut_table`; any frame of difference is reported.
 8. **Verify every frame:** solo-render both layers again → `conform.py verify --ref GEN2/ --mov PLATE2/ --check-time --every 1 --report S/t8.json`.
-   Ties at the first frame of each piece (the repeated frame) are expected; a run of lost frames inside
-   a piece is settled with `--boxes` on the subject or crops, never by moving a cut blindly. Strongest
+   **A run of lost frames is never accepted** — a repeated frame at the wrong place (cut too early or
+   too late) or a duplicate frame of the generator left in: the plate moves, the generation stands
+   still, heads double. Fix it from the same report: `conform.py refine-cuts --verify S/t8.json --plan
+   S/plan.json --fps <comp fps> --clip-start <comp s of frame 0> --clip-in <source s of frame 0> --out
+   S/refine.json` (or `--layout 'seq:src,…'` = each piece's start frame and the source frame it shows,
+   read back in p. 7) → `ae_pieces`, `cut_table`, `layout_after`. Apply it to the existing pieces in
+   order: piece k gets `startTime` = piece 0's `startTime` + `start_time_shift_seconds`, then `inPoint` /
+   `outPoint` (they are copies of one layer — any piece can show any range); one more piece → split
+   one; a piece no longer needed → ask the user before removing it. Render and verify again; accept
+   when `disagree_after` is empty and the only lost frames left are single ties at the repeated frames.
+   A layout taken from Premiere, another shot or an earlier run is a starting point only — the
+   per-frame check of this render decides (850, 06.11: the Premiere layout had its last two repeats 3
+   and 5 frames early; refine-cuts → pieces at 0 / 0.375 / 0.875 / 1.375 / 2.000 / 2.583 / 3.083 s,
+   in-frames 0 / 8 / 19 / 30 / 44 / 57 / 68). Strongest
    check: match every rendered generation frame against its native frames — each must be a native
    frame, none a blend.
 9. **One object drifts, the rest coincides:** the layer stays as cut; the object gets its own copy of
@@ -112,17 +124,45 @@ mid-shot → split the layer and fit per piece. Verify on a solo render with `co
 ## 5. Matte and seam (upper layer)
 
 Roto Brush / Object Matte or a Pen mask on the upper layer per `recipes/masks-roto.md`; a people matte
-from outside (Deep Matting) as a layer above → `layer.set_track_matte {matteType:"luma"}`. Mask
-feather/expansion through `mask.set_props`; measure on rendered alpha with
-`conform.py mask-measure --mask0 … --mask … --mask-prev … --report mask.json` (inset, transition width,
-jitter < 0.5 px, lost subject). Every person and every visible fragment of a partly hidden person is in
-the matte on every frame; faces first when something cannot hold.
+from outside (Deep Matting) as a layer above → `layer.set_track_matte {matteType:"luma"}`. Every person
+and every visible fragment of a partly hidden person is in the matte on every frame; faces first when
+something cannot hold.
+
+**The matte sits slightly inside the silhouette — this task only** (plate over an AI-generated layer;
+other mattes follow their own task). The plate's people are cut a little smaller than their outline,
+so the outline's edge comes from the generation underneath and no seam of the plate's old background
+shows. The user's standard: **feather 4**, the 50 % edge **8–12 px inside** the silhouette on 4608 px
+frames (Premiere: expansion −8 … −12) as the start.
+- Object Matte (effect `ADBE Samurai`) — **a mandatory step of this task, not a request to wait for.**
+  The effect carries TWO groups with the same display names: the **Object Matte** group (what the
+  matte renders with) and the **Refine Edge** group (applies only where the Refine Edge tool was used —
+  on a plain matte it changes nothing). Set the Object Matte group **by matchName**, never by display
+  name or a guessed index: Feather («Растушевка») = `/spatialsmoothing2` (property 16 on AE 26.5)
+  → **4**, set explicitly (the effect starts at 5); Shift Edge («Сместить край») = `/rmshiftedges`
+  (property 18) → **−8** to start (negative shrinks the matte); Contrast `/spatialsoftness2` stays.
+  The look-alikes `/HBspatialsoftness2` (26) and `/HBspatialchoke` (28) belong to Refine Edge — 06.11
+  an agent set 4 / −8 there, reported the halo gone, and the matte on screen had not changed.
+  `effect.set_property {comp, layer, effectIndex, property:["/rmshiftedges"], value:-8}` and the same
+  with `["/spatialsmoothing2"]`; then **read both groups back** (`ae_layer_info` of the layer, or an
+  `effect.list_on_layer` + the values) and put the four numbers in the report — Object Matte feather /
+  shift edge and Refine Edge feather / shift edge — so a wrong group is visible at once.
+- A Pen mask: `mask.set_props` feather 4 and a negative expansion.
+- Measure, never guess the units: render the layer's alpha (solo) on 3 frames once at Shift Edge 0 /
+  Feather 0 (M0), then at the final values (M) → `conform.py mask-measure --mask0 M0.png --mask M.png
+  [--mask-prev Mprev.png] --report mask.json` → `inset_px` median 8–12, `jitter_vs_prev_px` std < 0.5,
+  `lost_subject` false. Quote the measured inset, not the parameter.
+- The edge never crosses a face: eyes, nose and mouth inside on every frame (only cheeks may be
+  clipped) — a smaller shift there. Feather goes down, even to 0, when it would spill past the
+  silhouette (small figures) or soften a face; the remaining border is hidden by the colour match of
+  the lower layer (§4), not by a softer edge.
 
 ## 6. Report and acceptance
 
 Before → after on rendered frames: time (gain, speeds, frames lost), geometry (median / p90 / worst
 frame, per person), colour (bias, median abs, per-frame drift), matte (inset, transition, jitter).
 Accept: no frame lost in the time check, geometry p90 ≤ 2 px on people (or the best reached value with
-the reason), colour bias ≤ 1 level, every person in the matte with faces holding. Out of scope:
+the reason), colour bias ≤ 1 level, every person in the matte with faces holding, the matte's edge
+set in the Object Matte group (feather 4, Shift Edge negative, inset measured — the four numbers of
+§5 in the report). Out of scope:
 relighting, parallax between layers from a moving camera (report and stop), audio. The checkpoint
 stays; the project is saved only after the user accepts.

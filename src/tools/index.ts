@@ -16,6 +16,7 @@ import { renderFrameTool } from "./render-frame.js";
 import { saveProjectTool } from "./save-project.js";
 import { versionInfoTool } from "./version-info.js";
 import { dialogsTool } from "./dialogs.js";
+import { objectMatteUiTool } from "./object-matte-ui.js";
 
 export type AnyTool = {
   name: string;
@@ -42,4 +43,5 @@ export const ALL_TOOLS: AnyTool[] = [
   doTool,
   contextTool,
   dialogsTool,
+  objectMatteUiTool,
 ];
