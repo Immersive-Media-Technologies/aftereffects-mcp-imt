@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-06
+
+### Changed
+
+- **Descriptions: vision next to the UI languages.** The README lead, npm, `.mcpb` and `server.json` descriptions
+  say what the agent does by sight: it draws Object Matte on what it sees (lassos and ⊕/⊖ points on a rendered
+  frame, strokes read back, a preview of gaps and people — macOS) and syncs an AI-generated layer with the plate
+  frame by frame. The README gets a dated vision comparison table and a «How the agent sees» section;
+  `ae_object_matte_ui` is listed in the README tools table; the ChatGPT icon in Install matches the others.
+
 ## [1.1.0] - 2026-11-06
 
 ### Added

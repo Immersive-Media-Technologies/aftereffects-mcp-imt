@@ -236,6 +236,8 @@ Each version is described on the
 every change is in [`CHANGELOG.md`](CHANGELOG.md). Upstream fixes are merged from
 [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) by topic.
 
+- [v1.1.1](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.1.1) · 2026-11-06 —
+  descriptions with vision next to the UI languages (Object Matte by sight, generated layers synced frame by frame), a dated vision comparison and a «How the agent sees» section.
 - [v1.1.0](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.1.0) · 2026-11-06 —
   `ae_object_matte_ui`: Object Matte by sight (macOS) — lassos and points on a rendered frame, strokes read back, a preview image that marks gaps and the listed people; layer conform recipe (cut-only time, `conform.py` 1.2.0 with `refine-cuts`, the matte edge inside the silhouette).
 - [v1.0.2](https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/tag/v1.0.2) · 2026-10-28 —

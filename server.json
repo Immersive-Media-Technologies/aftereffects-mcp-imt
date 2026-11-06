@@ -8,7 +8,7 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt#readme",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/Immersive-Media-Technologies/aftereffects-mcp-imt/main/mcpb/icon.png",
@@ -21,15 +21,15 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@immersive-media-technologies/aftereffects-mcp-imt",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/download/v1.1.0/aftereffects-mcp-imt-1.1.0.mcpb",
-      "fileSha256": "37a1a7190030d97f9afedb6b4a1136f48e60881287ad85a1ffb931556264854f",
+      "identifier": "https://github.com/Immersive-Media-Technologies/aftereffects-mcp-imt/releases/download/v1.1.1/aftereffects-mcp-imt-1.1.1.mcpb",
+      "fileSha256": "4ceed6eaef90da281599ded6240d4f79c76d2da054bbe2098fec0b5170ab6da3",
       "transport": {
         "type": "stdio"
       }
